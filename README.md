@@ -4,7 +4,7 @@ Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sa
 
 **Site:** https://selimaytac.github.io/hashspan-learning-tr/
 
-58 konu, 370 çizim, 1201 not. Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç not.
+58 konu, 485 çizim, 1499 not. Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç not.
 
 ## Kripto akademisi
 
@@ -52,30 +52,30 @@ AI agent'ların zincire gönderdiği işlemleri OpenTelemetry ile izlemek: hashs
 
 ### Faz 1 · Temeller
 
-- [1 · Büyük resim](https://selimaytac.github.io/hashspan-learning-tr/hashspan/1-buyuk-resim/): hashspan'in agent trace'i ile zincir arasındaki boşluğu nasıl kapattığı: adapter, core ve OpenTelemetry SDK katmanlarının yeri.
-- [2 · Bir transaction'ın hayatı](https://selimaytac.github.io/hashspan-learning-tr/hashspan/2-transaction-hayati/): Bir transaction'ın oluşturulmasından receipt'ine kadarki adımları, send ve confirm span'lerinin sınırları, dört olası sonuç ve fee hesabı.
-- [3 · Trace ağacı ve context](https://selimaytac.github.io/hashspan-learning-tr/hashspan/3-trace-ve-context/): OpenTelemetry'de trace ağacı, context ve span link kavramları; confirm span'inin neden send'in çocuğu olmadığı ve span'lerin backend'e yolu.
-- [4 · Altın kurallar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/4-altin-kurallar/): hashspan'in iki temel kuralı: kullanıcının çağrısını asla bozmamak ve dışarı çıkan veriyi adres modu, hata modu ve redact hook ile sınırlamak.
-- [5 · Her transaction için tek confirm span'i](https://selimaytac.github.io/hashspan-learning-tr/hashspan/5-tek-confirm/): Aynı transaction'ı birden çok yer beklediğinde neden tek bir confirm span'i oluştuğu: ConfirmRegistry, handle'lar ve background confirmation.
-- [6 · Repo haritası ve araçlar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/6-repo-ve-araclar/): hashspan reposunun paket katmanları (core, viem, cdp, x402) ve bir değişikliğin unit testten npm yayınına kadar izlediği yol.
+- [1 · Büyük resim](https://selimaytac.github.io/hashspan-learning-tr/hashspan/1-buyuk-resim/): AI agent, span, trace ve transaction'dan başlayarak hashspan'in agent trace'ine send ve confirm span'lerini nasıl eklediği ve katmanları.
+- [2 · Bir transaction'ın hayatı](https://selimaytac.github.io/hashspan-learning-tr/hashspan/2-transaction-hayati/): Bir transaction'ın oluşturulmasından receipt'ine yedi adım, send ve confirm span'lerinin sınırları, fee hesabı ve dört olası sonuç.
+- [3 · Trace ağacı ve context](https://selimaytac.github.io/hashspan-learning-tr/hashspan/3-trace-ve-context/): Span'in parçaları, trace ağacı, context ile parent seçimi, confirm'in neden link ile bağlandığı, agent kimliği ve span'lerin backend'e yolu.
+- [4 · Altın kurallar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/4-altin-kurallar/): hashspan'in iki kuralı: kullanıcının çağrısını asla bozmamak ve dışarı çıkan veriyi adres modu, errorMessages ve redact hook ile sınırlamak.
+- [5 · Tek confirm span'i](https://selimaytac.github.io/hashspan-learning-tr/hashspan/5-tek-confirm/): Aynı transaction'ı birden çok yer beklediğinde neden tek confirm span'i oluştuğu: startConfirm, handle'lar, ConfirmRegistry ve arka plan takibi.
+- [6 · Repo haritası ve araçlar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/6-repo-ve-araclar/): hashspan reposunun dört paketi, bir span'in yolu, klasörler, günlük komutlar, iki tür test ve bir değişikliğin npm'e kadar yolu.
 
 ### Faz 2 · viem adapter'ı
 
-- [7 · client.extend() ve send span'inin context olması](https://selimaytac.github.io/hashspan-learning-tr/hashspan/7-viem-extend/): viem client.extend() ile withHashspan()'in action'ları nasıl sardığı, neden en son uygulandığı ve send span'inin context olması (ADR 0015).
-- [8 · Telemetri çağrı yolunun dışında](https://selimaytac.github.io/hashspan-learning-tr/hashspan/8-cagri-yolu-disinda/): Telemetrinin çağrı yolunun dışında kalması: chain id'nin paralel çözülmesi, track() ve flush() ile süren işler, background confirmation limiti.
-- [9 · Zor sonuçlar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/9-zor-sonuclar/): Zor sonuçlar: revert nedeninin replay ile bulunması, replacement, Base flashblocks preconfirmation ve timeout'un nasıl kaydedildiği.
-- [10 · JSON-RPC span'leri](https://selimaytac.github.io/hashspan-learning-tr/hashspan/10-json-rpc-spanleri/): traceTransport() ile her JSON-RPC isteğinin bir CLIENT span'i olması: yazılan attribute'lar, gizlenen değerler ve span'in ağaçtaki yeri.
+- [7 · viem: client.extend()](https://selimaytac.github.io/hashspan-learning-tr/hashspan/7-viem-extend/): withHashspan()'in viem client.extend() ile action'ları nasıl sardığı, neden en son uygulandığı ve send span'inin aktif context olması (ADR 0015).
+- [8 · Telemetri çağrı yolunun dışında](https://selimaytac.github.io/hashspan-learning-tr/hashspan/8-cagri-yolu-disinda/): Telemetrinin çağrıyı hiç bekletmemesi: chain id'nin paralel sorulması, çağrıdan sonra süren işler, flush(), background confirmation ve 256 sınırı.
+- [9 · Zor sonuçlar](https://selimaytac.github.io/hashspan-learning-tr/hashspan/9-zor-sonuclar/): Revert nedeninin replay ile bulunması, replacement, başka hash'in receipt'i, Base preconfirmation, timeout ve reorg'un confirm span'ine nasıl yazıldığı.
+- [10 · JSON-RPC span'leri](https://selimaytac.github.io/hashspan-learning-tr/hashspan/10-json-rpc-spanleri/): traceTransport() ile her JSON-RPC isteğinin bir CLIENT span'i olması: kurulum, yazılan attribute'lar, URL'den alınanlar, gizlenenler ve hatalar.
 
 ### Faz 3 · x402
 
-- [11 · x402 ve HTTP 402 akışı](https://selimaytac.github.io/hashspan-learning-tr/hashspan/11-x402-akisi/): x402 ile HTTP 402 akışı: agent'ın bir API'yi istek başına imzayla ödemesi, facilitator'ın settlement'ı ve hashspan'in payment span'i.
-- [12 · İmza ile ödeme](https://selimaytac.github.io/hashspan-learning-tr/hashspan/12-imza-ile-odeme/): x402 ödemelerinin neden transaction değil imza olduğu: EIP-3009 ve Permit2 arasındaki farklar, exact ve upto şemaları.
-- [13 · hashspan ödeyen tarafta](https://selimaytac.github.io/hashspan-learning-tr/hashspan/13-x402-odeyen-taraf/): @hashspan/x402'nin ödeyen tarafta hook'larla payment span'i kurması, reader ile confirm span'i ve blockchain.payment.verified doğrulaması.
-- [14 · Alan taraf ve güvenilmeyen girdi](https://selimaytac.github.io/hashspan-learning-tr/hashspan/14-x402-alan-taraf/): x402 resource server tarafı için önerilen withHashspanServer tasarımı (ADR 0023) ve uzaktan gelen güvenilmeyen girdinin kuralları (ADR 0025).
+- [11 · x402 ve HTTP 402 akışı](https://selimaytac.github.io/hashspan-learning-tr/hashspan/11-x402-akisi/): x402 ile bir agent'ın ücretli API'yi istek başına imzayla ödemesi: 402 cevabı, imza, facilitator'ın settlement'ı ve hashspan'in payment span'i.
+- [12 · İmza ile ödeme](https://selimaytac.github.io/hashspan-learning-tr/hashspan/12-imza-ile-odeme/): x402 ödemesi neden transaction değil imzadır: EIP-3009 ve Permit2 imzaları, zincirde bıraktıkları loglar, exact ve upto şemaları, izlenen ağlar.
+- [13 · hashspan ödeyen tarafta](https://selimaytac.github.io/hashspan-learning-tr/hashspan/13-x402-odeyen-taraf/): @hashspan/x402 ödeyen tarafta: hook'larla payment span'i, attribute'lar, sonuçlar ve timeout, reader ile confirm span'i ve payment.verified kontrolü.
+- [14 · Alan taraf ve güvenilmeyen girdi](https://selimaytac.github.io/hashspan-learning-tr/hashspan/14-x402-alan-taraf/): x402'de alan taraf için önerilen withHashspanServer tasarımı (ADR 0023, proposed) ve dışarıdan gelen veriye uygulanan altı kural (ADR 0025).
 
 ### Faz 4 · OTLP
 
-- [15 · OTLP protokolü](https://selimaytac.github.io/hashspan-learning-tr/hashspan/15-otlp-protokolu/): OTLP ile span'lerin uygulamadan backend'e yolu: SDK, processor, exporter, isteğe bağlı collector, HTTP ve gRPC portları, ortam değişkenleri.
+- [15 · OTLP protokolü](https://selimaytac.github.io/hashspan-learning-tr/hashspan/15-otlp-protokolu/): OTLP ile span'lerin uygulamadan backend'e yolu: SDK ve processor, isteğe bağlı collector, HTTP ve gRPC, istek yapısı, scope ve ortam değişkenleri.
 - [16 · SDK kurulumu](https://selimaytac.github.io/hashspan-learning-tr/hashspan/16-sdk-kurulumu/): Örnek agent'ın telemetry.ts dosyasıyla OpenTelemetry SDK kurulumu: resource, processor, register, AI SDK span'leri, metrics ve kapanış sırası.
 - [17 · Backend'ler](https://selimaytac.github.io/hashspan-learning-tr/hashspan/17-backendler/): Aynı hashspan span'lerinin Jaeger, Grafana Tempo, Langfuse ve Honeycomb'da görünümü, kurulum değişkenleri ve her backend'in farkları.
 - [18 · Semconv ve gizlilik](https://selimaytac.github.io/hashspan-learning-tr/hashspan/18-semconv-gizlilik/): hashspan semantic conventions: send, confirm ve payment span'lerinin attribute'ları, sonuçlar, adres modu, hata gizliliği, sınırlar ve ad değişim kuralı.
