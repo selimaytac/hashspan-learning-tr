@@ -148,6 +148,40 @@
     });
   }
 
+  // Saved pages: a toggle on each page, listed on the saved page.
+  const saved = new Set(S.get('gk-saved') || []);
+  for (const b of $$('.save')) {
+    const paintSave = () => { const on = saved.has(b.dataset.save); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '★ Kaydedildi' : '☆ Kaydet'; };
+    paintSave();
+    b.addEventListener('click', () => { saved.has(b.dataset.save) ? saved.delete(b.dataset.save) : saved.add(b.dataset.save); S.set('gk-saved', [...saved]); paintSave(); });
+  }
+  const savedIndex = $('#saved-index');
+  if (savedIndex) {
+    const idx = JSON.parse(savedIndex.textContent);
+    const ids = [...saved].filter((id) => idx[id]).reverse();
+    $('#saved-empty').hidden = ids.length > 0;
+    $('#saved').append(...ids.map((id) => {
+      const a = document.createElement('a'); a.className = 'saved-card'; a.href = idx[id].href;
+      const img = document.createElement('img'); img.src = idx[id].img; img.alt = ''; img.loading = 'lazy';
+      const b = document.createElement('b'); b.textContent = idx[id].title;
+      const sm = document.createElement('small'); sm.textContent = idx[id].topic;
+      a.append(img, b, sm); return a;
+    }));
+  }
+
+  // Mini check: pick an option, see whether it is right and why.
+  for (const qz of $$('.qz')) {
+    const right = Number(qz.dataset.answer);
+    for (const o of $$('.qz-o', qz)) o.addEventListener('click', () => {
+      if (qz.classList.contains('done')) return;
+      qz.classList.add('done');
+      const pick = Number(o.dataset.i);
+      $$('.qz-o', qz).forEach((x, n) => { if (n === right) x.classList.add('right'); });
+      if (pick !== right) o.classList.add('wrong');
+      const why = $('.qz-why', qz); why.textContent = `${pick === right ? 'Doğru. ' : 'Doğrusu işaretli. '}${why.textContent}`; why.hidden = false;
+    });
+  }
+
   // Topic reader.
   const pages = $$('.pg');
   if (!pages.length) return;
@@ -180,6 +214,7 @@
     next.querySelector('span').textContent = end ? (nt ? 'Sonraki konu' : 'Bitti') : 'İleri';
     next.classList.toggle('ok', end);
     $('.endcard')?.classList.toggle('show', end);
+    $('.quiz')?.classList.toggle('show', end);
     mark(i); paint();
     S.set('gk-last', { href: `${location.pathname}#${pages[i].id}`, title: `${document.title.split(' | ')[0]} · ${i + 1}/${pages.length}` });
     history.replaceState(null, '', `#${pages[i].id}`);

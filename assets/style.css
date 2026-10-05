@@ -316,3 +316,29 @@ a.gl:hover { background: var(--yellow); color: var(--on-fill); }
 /* Only the last page ends with the "topic done" card in page-by-page mode */
 .js.paged .endcard { display: none; }
 .js.paged .endcard.show { display: grid; }
+
+/* Save a page */
+.notes-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.notes-top small { font: 600 12px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+.save { cursor: pointer; font: 600 13px/1 var(--mono); color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink); border-radius: 999px; padding: 7px 11px; }
+.save[aria-pressed="true"] { background: var(--yellow); color: var(--on-fill); border-color: var(--on-fill); }
+.saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 14px; margin: 22px 0 60px; }
+.saved-card { display: grid; gap: 8px; text-decoration: none; color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 10px; }
+.saved-card img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: top; border-radius: 8px; background: #fff; border: 1.5px solid var(--hair); }
+.saved-card b { font: 600 14px/1.3 var(--mono); }
+.saved-card small { color: var(--muted); font-size: 13px; }
+.saved-card:hover { box-shadow: 4px 4px 0 var(--shadow); }
+
+/* Mini check */
+.quiz { border: 2px dashed var(--ink); border-radius: 14px; padding: 20px 22px; display: grid; gap: 18px; margin: 10px 0 18px; background: var(--paper); }
+.js.paged .quiz { display: none; }
+.js.paged .quiz.show { display: grid; }
+.qz-q { margin: 0 0 10px; font: 600 17px/1.4 var(--sans); }
+.qz-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qz-o { width: 100%; text-align: left; cursor: pointer; font: 500 15.5px/1.4 var(--sans); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 10px 14px; }
+.qz-o:hover { background: var(--paper-2); }
+.qz-o.right { background: var(--green); color: var(--on-fill); border-color: var(--on-fill); }
+.qz-o.wrong { background: var(--red); color: var(--on-fill); border-color: var(--on-fill); }
+.qz.done .qz-o { cursor: default; }
+.qz-why { margin: 10px 0 0; font: 18px/1.35 var(--hand); color: var(--ink-2); }
+@media (max-width: 760px) { .top nav a.wide { display: none; } }

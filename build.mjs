@@ -57,10 +57,10 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 </head><body${bodyClass ? ` class="${bodyClass}"` : ''}>
 <header class="top"><div class="wrap"><a class="brand" href="${url()}">${logo}<span><b>${SITE}</b></span></a>
 <a class="sponsor" href="${HASHSPAN}" target="_blank" rel="noopener" title="hashspan'a GitHub'da yıldız ver">★ <span>#hashspan</span><em> sponsorluğunda</em></a>
-<nav aria-label="Site"><a href="${url()}"${nav === 'map' ? ' aria-current="page"' : ''}>Harita</a><a href="${url('sozluk/')}"${nav === 'gloss' ? ' aria-current="page"' : ''}>Sözlük</a><a class="wide" href="${url('hakkinda/')}"${nav === 'about' ? ' aria-current="page"' : ''}>Hakkında</a><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">◐</button></nav></div>
+<nav aria-label="Site"><a href="${url()}"${nav === 'map' ? ' aria-current="page"' : ''}>Harita</a><a href="${url('sozluk/')}"${nav === 'gloss' ? ' aria-current="page"' : ''}>Sözlük</a><a class="wide" href="${url('kaydedilenler/')}"${nav === 'saved' ? ' aria-current="page"' : ''}>Kaydedilenler</a><a class="wide" href="${url('hakkinda/')}"${nav === 'about' ? ' aria-current="page"' : ''}>Hakkında</a><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">◐</button></nav></div>
 <div class="meter"><i></i></div></header>
 <main>${body}</main>
-<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
+<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('kaydedilenler/')}">Kaydedilenler</a><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
 <script src="${url(`app.js?v=${VER}`)}" defer></script>
 </body></html>
 `;
@@ -176,10 +176,11 @@ for (const t of topics) {
 <article>
 ${t.pages.map((p, k) => `<section class="pg${p.h > p.w ? ' portrait' : ''}" id="s${k + 1}" data-id="${p.id}">
 <figure class="shot${p.h > p.w ? '' : ' wide'}"><img src="${url(`img/${p.id}.webp`)}" width="${p.w}" height="${p.h}" style="aspect-ratio:${p.w}/${p.h}" alt="${esc(`${p.title}: ${p.text}`.slice(0, 480))}"${k ? ' loading="lazy"' : ''} decoding="async">${p.h > p.w ? '' : '<figcaption class="zoomhint">Büyütmek için dokun ⤢</figcaption>'}</figure>
-<div class="notes"><h2><small>${esc(t.code)}.${k + 1} / ${t.pages.length}</small>${esc(p.title)}</h2>
+<div class="notes"><div class="notes-top"><small>${esc(t.code)}.${k + 1} / ${t.pages.length}</small><button class="save" type="button" data-save="${p.id}" aria-pressed="false">☆ Kaydet</button></div><h2>${esc(p.title)}</h2>
 ${p.notes.length ? `<ul>${linkNotes(p.notes).map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
 ${p.text ? `<details><summary>Çizimdeki yazılar</summary><p>${esc(p.text)}</p></details>` : ''}</div>
 </section>`).join('\n')}
+${t.quiz?.length ? `<section class="quiz" aria-label="Kendini dene"><span class="eyebrow">Kendini dene · ${t.quiz.length} soru</span>${t.quiz.map((qz, n) => `<div class="qz" data-answer="${qz.answer}"><p class="qz-q">${esc(qz.q)}</p><ol class="qz-opts">${qz.options.map((o, m) => `<li><button class="qz-o" type="button" data-i="${m}">${esc(o)}</button></li>`).join('')}</ol><p class="qz-why" hidden>${esc(qz.why)}</p></div>`).join('')}</section>` : ''}
 <section class="endcard"><span class="eyebrow">Konu bitti</span><h2>${t.next ? `Sırada: ${esc(`${t.next.code} · ${t.next.title}`)}` : 'Son konuya geldin'}</h2>
 ${t.next?.description ? `<p>${esc(t.next.description)}</p>` : ''}
 <div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
@@ -218,6 +219,13 @@ put('sozluk/index.html', layout({
   }).join('\n')}</div><nav class="gpager" aria-label="Sözlük sayfaları"></nav></div>`,
 }));
 
+const savedIndex = Object.fromEntries(topics.flatMap((t) => t.pages.map((p, k) => [p.id, { title: p.title, topic: `${t.code} · ${t.title}`, href: url(`${t.path}#s${k + 1}`), img: url(`img/${p.id}.webp`) }])));
+put('kaydedilenler/index.html', layout({
+  title: `Kaydedilenler | ${SITE}`, description: 'Tekrar bakmak için kaydettiğin sayfalar ve sözlük favorilerin.', path: 'kaydedilenler/', nav: 'saved',
+  body: `<div class="wrap"><header class="gloss-head"><span class="eyebrow">Sadece bu tarayıcıda</span><h1>Kaydedilenler</h1><p class="hand" style="font-size:21px;color:var(--ink-2);margin:0">Bir sayfadaki ☆ Kaydet düğmesiyle buraya eklenir.</p></header>
+<div class="saved-grid" id="saved"></div><p class="result" id="saved-empty" hidden>Henüz kaydedilen sayfa yok. Bir konuda, notların üstündeki ☆ Kaydet düğmesine dokun.</p>
+<script type="application/json" id="saved-index">${JSON.stringify(savedIndex).replace(/</g, '\\u003c')}</script></div>`,
+}));
 put('hakkinda/index.html', layout({
   title: `Hakkında | ${SITE}`, description: SITE_DESC, path: 'hakkinda/', nav: 'about',
   body: `<div class="wrap prose"><span class="eyebrow">Hakkında</span><h1>Az yazı, çok çizim</h1>
@@ -237,7 +245,7 @@ writeFileSync(join(out, 'favicon.svg'), logo.replace('width="34" height="34" ', 
 writeFileSync(join(out, '.nojekyll'), '');
 cpSync(join(root, 'content', 'img'), join(out, 'img'), { recursive: true });
 cpSync(join(root, 'content', 'og'), join(out, 'og'), { recursive: true });
-const urls = ['', 'sozluk/', 'hakkinda/', ...data.tracks.map((t) => `${t.slug}/`), ...topics.map((t) => t.path)];
+const urls = ['', 'sozluk/', 'hakkinda/', 'kaydedilenler/', ...data.tracks.map((t) => `${t.slug}/`), ...topics.map((t) => t.path)];
 writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${abs(u)}</loc></url>`).join('\n')}\n</urlset>\n`);
 writeFileSync(join(out, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${abs('sitemap.xml')}\n`);
 writeFileSync(join(out, 'llms.txt'), `# ${SITE}\n\n> ${SITE_DESC}\n\n${data.tracks.map((track) => `## ${track.name}\n\n${topics.filter((t) => t.track === track).map((t) => `- [${t.code} · ${t.title}](${abs(t.path)}): ${t.description || `${t.pages.length} sayfa`}`).join('\n')}`).join('\n\n')}\n`);
