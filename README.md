@@ -1,4 +1,4 @@
-# Görsel Kripto ve hashspan
+# Görsel Kripto
 
 Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sayfada bir fikir, bir çizim. Türkçe ve ücretsiz.
 

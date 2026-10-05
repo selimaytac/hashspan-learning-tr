@@ -11,7 +11,7 @@ const out = join(root, '_site');
 const BASE = (process.env.BASE_URL ?? 'https://selimaytac.github.io/hashspan-learning-tr').replace(/\/$/, '');
 const PATH = new URL(`${BASE}/`).pathname;
 const SITE = 'Görsel Kripto';
-const SITE_SUB = 've hashspan';
+const HASHSPAN = 'https://github.com/selimaytac/hashspan';
 const SITE_DESC = 'Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sayfada bir fikir, bir çizim. Türkçe ve ücretsiz.';
 const LICENSE = 'https://creativecommons.org/licenses/by/4.0/deed.tr';
 const REPO = 'https://github.com/selimaytac/hashspan-learning-tr';
@@ -44,20 +44,21 @@ const layout = ({ title, description, path, image, body, jsonld = [], type = 'we
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${abs(path)}"><link rel="license" href="${LICENSE}">
-<meta property="og:type" content="${type}"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="${esc(`${SITE} ${SITE_SUB}`)}">
+<meta property="og:type" content="${type}"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="${esc(SITE)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${abs(path)}">
 ${image ? `<meta property="og:image" content="${abs(image)}"><meta name="twitter:card" content="summary_large_image">` : ''}
-<meta name="theme-color" content="#fbfaf6"><link rel="icon" href="${url('favicon.svg')}" type="image/svg+xml">
+<meta name="theme-color" content="#fbfaf6"><meta name="color-scheme" content="light dark"><link rel="icon" href="${url('favicon.svg')}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="${url('style.css')}">
 <script>try{var t=JSON.parse(localStorage.getItem('gk-theme'));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n')}
 </head><body${bodyClass ? ` class="${bodyClass}"` : ''}>
-<header class="top"><div class="wrap"><a class="brand" href="${url()}">${logo}<span><b>${SITE}</b><small>${SITE_SUB}</small></span></a>
+<header class="top"><div class="wrap"><a class="brand" href="${url()}">${logo}<span><b>${SITE}</b></span></a>
+<a class="sponsor" href="${HASHSPAN}" target="_blank" rel="noopener" title="hashspan'a GitHub'da yıldız ver">★ <span>#hashspan</span><em> sponsorluğunda</em></a>
 <nav aria-label="Site"><a href="${url()}"${nav === 'map' ? ' aria-current="page"' : ''}>Harita</a><a href="${url('sozluk/')}"${nav === 'gloss' ? ' aria-current="page"' : ''}>Sözlük</a><a class="wide" href="${url('hakkinda/')}"${nav === 'about' ? ' aria-current="page"' : ''}>Hakkında</a><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">◐</button></nav></div>
 <div class="meter"><i></i></div></header>
 <main>${body}</main>
-<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
+<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
 <script src="${url('app.js')}" defer></script>
 </body></html>
 `;
@@ -88,7 +89,11 @@ const roadmap = (track) => {
   return `<div class="flow">${prereq}${track.sections.map((sec) => moduleHtml(track, sec)).join('<div class="connector"><span>sonra</span></div>')}</div>`;
 };
 
-const trackBlock = (track) => `<section class="track" id="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p></div>${roadmap(track)}</section>`;
+const trackBlock = (track) => `<section class="track" id="${track.slug}" data-track="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p></div>
+<nav class="pager" aria-label="${esc(track.name)} bölümleri"><button class="btn sq" type="button" data-step="-1" aria-label="Önceki bölüm">←</button><ol>${track.sections.map((sec, k) => `<li><button class="chip" type="button" data-go="${k}" title="${esc(sec.title)}">${esc(sec.title.split(' · ')[0])}</button></li>`).join('')}</ol><button class="btn sq" type="button" data-step="1" aria-label="Sonraki bölüm">→</button><span class="pager-name"></span></nav>
+${roadmap(track)}
+<div class="pager-foot"><button class="btn" type="button" data-step="-1">← Önceki bölüm</button><button class="btn go" type="button" data-step="1">Sonraki bölüm →</button></div></section>`;
+const trackTabs = `<div class="tracktabs" role="tablist">${data.tracks.map((t) => `<button type="button" role="tab" data-track="${t.slug}"><b>${esc(t.name)}</b><small>${topics.filter((x) => x.track === t).length} konu</small></button>`).join('')}</div>`;
 
 const legend = `<ul class="legend" aria-label="Renkler"><li class="chip">başlanmadı</li><li class="chip y">yarım</li><li class="chip g">bitti</li><li class="chip b">sıradaki</li></ul>`;
 const searchBox = (ph) => `<label class="search">${searchIcon}<input id="q" type="search" placeholder="${ph}" aria-label="Ara"></label>`;
@@ -105,11 +110,12 @@ const hero = `<div class="wrap"><section class="hero">
 <div class="sticker"><img src="${url(`img/${heroPage.id}.webp`)}" width="${heroPage.w}" height="${heroPage.h}" alt="Public key'den Ethereum adresine: keccak256 ve son 20 byte"><span class="hand">her sayfa böyle bir çizim ↘</span></div>
 </section>
 <div class="toolbar">${searchBox('Ara: imza, MPC, span, finality…')}${legend}</div>
+${trackTabs}
 ${data.tracks.map(trackBlock).join('\n')}
 </div>`;
 put('index.html', layout({
-  title: `${SITE} ${SITE_SUB}: çizimlerle kripto ve on-chain gözlemlenebilirlik`, description: SITE_DESC, path: '', body: hero, nav: 'map', image: `og/kripto-${first.slug}.jpg`,
-  jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: `${SITE} ${SITE_SUB}`, url: abs(), inLanguage: 'tr', description: SITE_DESC }],
+  title: `${SITE}: çizimlerle kripto ve on-chain gözlemlenebilirlik`, description: SITE_DESC, path: '', body: hero, nav: 'map', image: `og/kripto-${first.slug}.jpg`,
+  jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: abs(), inLanguage: 'tr', description: SITE_DESC }],
 }));
 
 // Track pages.
@@ -118,7 +124,7 @@ for (const track of data.tracks) {
   put(`${track.slug}/index.html`, layout({
     title: `${track.name} | ${SITE}`, description: track.description, path: `${track.slug}/`, nav: 'map',
     body: `<div class="wrap"><p class="crumbs"><a href="${url()}">Harita</a> / ${esc(track.name)}</p><div class="toolbar">${searchBox(`${track.name} içinde ara…`)}${legend}</div>${trackBlock(track)}</div>`,
-    jsonld: [{ '@context': 'https://schema.org', '@type': 'Course', name: track.name, description: track.description, inLanguage: 'tr', url: abs(`${track.slug}/`), license: LICENSE, isAccessibleForFree: true, provider: { '@type': 'Organization', name: `${SITE} ${SITE_SUB}`, url: abs() }, hasPart: tt.map((t) => ({ '@type': 'LearningResource', name: `${t.code} · ${t.title}`, url: abs(t.path) })) }],
+    jsonld: [{ '@context': 'https://schema.org', '@type': 'Course', name: track.name, description: track.description, inLanguage: 'tr', url: abs(`${track.slug}/`), license: LICENSE, isAccessibleForFree: true, provider: { '@type': 'Organization', name: SITE, url: abs() }, hasPart: tt.map((t) => ({ '@type': 'LearningResource', name: `${t.code} · ${t.title}`, url: abs(t.path) })) }],
   }));
 }
 
@@ -178,17 +184,18 @@ for (const line of md.split('\n')) {
 const index = topics.map((t) => ({ t, text: findText(t) }));
 const usedIn = (term) => {
   const keys = term.replace(/`/g, '').split(/\s*\/\s*|\s*\(/).map((k) => lower(k.replace(/\)$/, '').trim())).filter((k) => k.length > 2);
-  return index.filter(({ text }) => keys.some((k) => text.includes(k))).slice(0, 5).map(({ t }) => t);
+  return index.filter(({ text }) => keys.some((k) => text.includes(k))).slice(0, 4).map(({ t }) => t);
 };
 const cats = [...new Set(terms.map((x) => x.cat))];
 put('sozluk/index.html', layout({
-  title: `Sözlük | ${SITE}`, description: 'Blockchain, OpenTelemetry ve hashspan terimleri: her terim tek cümle, geçtiği konulara bağlantıyla.', path: 'sozluk/', nav: 'gloss',
+  title: `Sözlük | ${SITE}`, description: 'Kripto, blockchain, OpenTelemetry ve hashspan terimleri: her terim tek cümle, geçtiği konulara bağlantıyla.', path: 'sozluk/', nav: 'gloss',
   body: `<div class="wrap"><header class="gloss-head"><span class="eyebrow">${terms.length} terim</span><h1>Sözlük</h1><p class="hand" style="font-size:21px;color:var(--ink-2);margin:0">Her terim tek cümle. Ayrıntı, terimin geçtiği konularda.</p></header>
-<div class="toolbar">${searchBox('Terim ara: nonce, span, receipt…')}<ul class="cats">${cats.map((c) => `<li><button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="false">${esc(c)}</button></li>`).join('')}</ul></div>
+<div class="toolbar">${searchBox('Terim ara: nonce, span, receipt…')}<ul class="cats"><li><button class="chip fav-filter" type="button" data-cat="★" aria-pressed="false">★ Favorilerim <span id="favn">0</span></button></li>${cats.map((c) => `<li><button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="false">${esc(c)} <span>${terms.filter((x) => x.cat === c).length}</span></button></li>`).join('')}</ul></div>
+<p class="result" id="result" aria-live="polite"></p>
 <div class="terms">${terms.map((x) => {
     const used = usedIn(x.term);
-    return `<article class="term" data-cat="${esc(x.cat)}" data-find="${esc(lower(`${x.term} ${x.what} ${x.why}`))}"><span class="cat">${esc(x.cat)}</span><h3>${inline(x.term)}</h3><p>${inline(x.what)}</p>${x.why ? `<p class="why">${inline(x.why)}</p>` : ''}${used.length ? `<ul>${used.map((t) => `<li><a class="chip" href="${url(t.path)}" title="${esc(`${t.code} · ${t.title}`)}">${esc(t.track.slug === 'hashspan' ? `hashspan ${t.code}` : t.code)}</a></li>`).join('')}</ul>` : ''}</article>`;
-  }).join('\n')}</div></div>`,
+    return `<article class="term" data-cat="${esc(x.cat)}" data-term="${esc(x.term)}" data-find="${esc(lower(`${x.term} ${x.what} ${x.why}`))}"><div class="term-top"><span class="cat">${esc(x.cat)}</span><button class="fav" type="button" aria-pressed="false" aria-label="Favorilere ekle: ${esc(x.term.replace(/`/g, ''))}">☆</button></div><h3>${inline(x.term)}</h3><p>${inline(x.what)}</p>${x.why ? `<p class="why">${inline(x.why)}</p>` : ''}${used.length ? `<ul>${used.map((t) => `<li><a class="chip" href="${url(t.path)}" title="${esc(`${t.code} · ${t.title}`)}">${esc(t.track.slug === 'hashspan' ? `hashspan ${t.code}` : t.code)}</a></li>`).join('')}</ul>` : ''}</article>`;
+  }).join('\n')}</div><nav class="gpager" aria-label="Sözlük sayfaları"></nav></div>`,
 }));
 
 put('hakkinda/index.html', layout({
@@ -213,9 +220,9 @@ cpSync(join(root, 'content', 'og'), join(out, 'og'), { recursive: true });
 const urls = ['', 'sozluk/', 'hakkinda/', ...data.tracks.map((t) => `${t.slug}/`), ...topics.map((t) => t.path)];
 writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${abs(u)}</loc></url>`).join('\n')}\n</urlset>\n`);
 writeFileSync(join(out, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${abs('sitemap.xml')}\n`);
-writeFileSync(join(out, 'llms.txt'), `# ${SITE} ${SITE_SUB}\n\n> ${SITE_DESC}\n\n${data.tracks.map((track) => `## ${track.name}\n\n${topics.filter((t) => t.track === track).map((t) => `- [${t.code} · ${t.title}](${abs(t.path)}): ${t.description || `${t.pages.length} sayfa`}`).join('\n')}`).join('\n\n')}\n`);
+writeFileSync(join(out, 'llms.txt'), `# ${SITE}\n\n> ${SITE_DESC}\n\n${data.tracks.map((track) => `## ${track.name}\n\n${topics.filter((t) => t.track === track).map((t) => `- [${t.code} · ${t.title}](${abs(t.path)}): ${t.description || `${t.pages.length} sayfa`}`).join('\n')}`).join('\n\n')}\n`);
 
-writeFileSync(join(root, 'README.md'), `# ${SITE} ${SITE_SUB}
+writeFileSync(join(root, 'README.md'), `# ${SITE}
 
 ${SITE_DESC}
 

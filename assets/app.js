@@ -1,4 +1,4 @@
-// Progress lives in this browser only (localStorage): which pages were seen and where reading stopped.
+// Progress lives in this browser only (localStorage): seen pages, where reading stopped, favourite terms, theme.
 (() => {
   const S = {
     get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -11,18 +11,15 @@
   const seen = new Set(S.get('gk-seen') || []);
   const save = () => S.set('gk-seen', [...seen]);
 
-  // Theme toggle: light, dark, or the system's choice when never toggled.
-  const theme = S.get('gk-theme');
-  if (theme) root.dataset.theme = theme;
+  // Theme: light unless the reader switched to dark.
   const tt = $('#theme');
   if (tt) tt.addEventListener('click', () => {
-    const dark = (root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
-    root.dataset.theme = dark ? 'light' : 'dark';
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
     S.set('gk-theme', root.dataset.theme);
   });
 
   // Map: state per topic (started, done) and the suggested next topic.
-  const items = $$('[data-pages]');
+  const items = $$('.chain > li[data-pages]');
   if (items.length) {
     for (const li of items) {
       const ids = li.dataset.pages.split(' ');
@@ -32,31 +29,118 @@
       const small = $('.node small', li);
       if (small && n && n < ids.length) small.textContent = `${n}/${ids.length} sayfa`;
     }
-    // Suggest the first started topic, else the first one not finished.
     (items.find((li) => li.classList.contains('part')) || items.find((li) => !li.classList.contains('done')))?.classList.add('next');
     const last = S.get('gk-last');
     const resume = $('#resume');
     if (resume && last) { resume.href = last.href; resume.querySelector('span').textContent = last.title; resume.hidden = false; }
   }
 
-  // Search on the map and in the glossary.
+  // Map pagination: one track and one section at a time.
+  const tracks = $$('.track[data-track]');
+  if (tracks.length) {
+    const tabs = $$('.tracktabs button');
+    const state = { track: null, index: {} };
+    const modulesOf = (tr) => $$('.module', tr);
+    function showSection(tr, k, scroll) {
+      const mods = modulesOf(tr);
+      k = Math.max(0, Math.min(mods.length - 1, k));
+      state.index[tr.dataset.track] = k;
+      mods.forEach((m, j) => m.classList.toggle('on', j === k));
+      const pre = $('.prereq', tr); if (pre) pre.classList.toggle('on', k === 0);
+      $$('.pager [data-go]', tr).forEach((b, j) => {
+        b.setAttribute('aria-current', String(j === k));
+        const lis = $$('.chain > li', mods[j]);
+        b.classList.toggle('done', lis.length > 0 && lis.every((li) => li.classList.contains('done')));
+      });
+      $('.pager-name', tr).textContent = mods[k].querySelector('h3').textContent;
+      $$('[data-step="-1"]', tr).forEach((b) => { b.disabled = k === 0; });
+      $$('[data-step="1"]', tr).forEach((b) => { b.disabled = k === mods.length - 1; });
+      history.replaceState(null, '', `#${mods[k].id}`);
+      if (scroll) ($('.tracktabs') || tr).scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+    function showTrack(slug, k, scroll) {
+      state.track = slug;
+      tracks.forEach((tr) => tr.classList.toggle('on', tr.dataset.track === slug));
+      tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.track === slug)));
+      const tr = tracks.find((x) => x.dataset.track === slug);
+      showSection(tr, k ?? state.index[slug] ?? 0, scroll);
+    }
+    tabs.forEach((b) => b.addEventListener('click', () => showTrack(b.dataset.track)));
+    for (const tr of tracks) {
+      $$('[data-go]', tr).forEach((b) => b.addEventListener('click', () => showSection(tr, Number(b.dataset.go))));
+      $$('[data-step]', tr).forEach((b) => b.addEventListener('click', () => showSection(tr, state.index[tr.dataset.track] + Number(b.dataset.step), b.closest('.pager-foot') !== null)));
+    }
+    // Start at the linked section, else where the suggested next topic is.
+    const linked = location.hash && $(`.module${CSS.escape(location.hash)}`);
+    const start = linked || $('.chain > li.next')?.closest('.module') || $('.module');
+    const startTrack = start.closest('.track');
+    for (const tr of tracks) state.index[tr.dataset.track] = 0;
+    showTrack(startTrack.dataset.track, modulesOf(startTrack).indexOf(start), false);
+  }
+
+  // Search (map and glossary), glossary categories, favourites and pages.
   const q = $('#q');
-  if (q) {
-    const cards = $$('[data-find]');
-    let cat = '';
-    const apply = () => {
-      const v = q.value.trim().toLocaleLowerCase('tr');
-      for (const c of cards) c.classList.toggle('hide', (!!v && !c.dataset.find.includes(v)) || (!!cat && c.dataset.cat !== cat));
-      for (const m of $$('.module, .connector')) {
-        if (!m.classList.contains('module')) { m.classList.toggle('hide', !!v); continue; }
-        m.classList.toggle('hide', !!v && !$('[data-find]:not(.hide)', m));
-      }
-    };
-    q.addEventListener('input', apply);
+  const terms = $$('.term');
+  const favs = new Set(S.get('gk-favs') || []);
+  const PER = 12;
+  let gpage = 0;
+  let cat = '';
+  function paintFavs() {
+    for (const t of terms) {
+      const on = favs.has(t.dataset.term);
+      t.classList.toggle('is-fav', on);
+      const b = $('.fav', t); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '★' : '☆';
+    }
+    const n = $('#favn'); if (n) n.textContent = String(favs.size);
+  }
+  function applyGlossary() {
+    const v = q.value.trim().toLocaleLowerCase('tr');
+    const match = terms.filter((t) => (!v || t.dataset.find.includes(v)) && (!cat || (cat === '★' ? favs.has(t.dataset.term) : t.dataset.cat === cat)));
+    const pages = Math.max(1, Math.ceil(match.length / PER));
+    gpage = Math.min(gpage, pages - 1);
+    for (const t of terms) t.classList.add('off');
+    match.slice(gpage * PER, gpage * PER + PER).forEach((t) => t.classList.remove('off'));
+    $('#result').textContent = match.length
+      ? `${match.length} terim${pages > 1 ? ` · sayfa ${gpage + 1}/${pages}` : ''}`
+      : (cat === '★' ? 'Henüz favori yok: bir terimin ☆ işaretine dokun.' : 'Bu aramayla eşleşen terim yok.');
+    const nav = $('.gpager');
+    nav.innerHTML = '';
+    if (pages > 1) {
+      const mk = (label, p, aria) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chip'; b.textContent = label;
+        if (aria) b.setAttribute('aria-label', aria);
+        b.setAttribute('aria-current', String(p === gpage));
+        b.disabled = p < 0 || p >= pages;
+        b.addEventListener('click', () => { gpage = p; applyGlossary(); $('.gloss-head').scrollIntoView({ behavior: 'smooth' }); });
+        nav.append(b);
+      };
+      mk('←', gpage - 1, 'Önceki sayfa');
+      for (let p = 0; p < pages; p += 1) mk(String(p + 1), p);
+      mk('→', gpage + 1, 'Sonraki sayfa');
+    }
+  }
+  if (terms.length) {
+    paintFavs();
+    for (const t of terms) $('.fav', t).addEventListener('click', () => {
+      favs.has(t.dataset.term) ? favs.delete(t.dataset.term) : favs.add(t.dataset.term);
+      S.set('gk-favs', [...favs]); paintFavs(); applyGlossary();
+    });
     for (const b of $$('.cats button')) b.addEventListener('click', () => {
       cat = b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.cat;
       for (const x of $$('.cats button')) x.setAttribute('aria-pressed', String(x.dataset.cat === cat && !!cat));
-      apply();
+      gpage = 0; applyGlossary();
+    });
+    q.addEventListener('input', () => { gpage = 0; applyGlossary(); });
+    applyGlossary();
+  } else if (q) {
+    const cards = $$('[data-find]');
+    q.addEventListener('input', () => {
+      const v = q.value.trim().toLocaleLowerCase('tr');
+      root.classList.toggle('searching', !!v);
+      for (const c of cards) c.classList.toggle('hide', !!v && !c.dataset.find.includes(v));
+      for (const m of $$('.module')) m.classList.toggle('hide', !!v && !$('[data-find]:not(.hide)', m));
+      for (const tr of $$('.track')) tr.classList.toggle('hide', !!v && !$('.module:not(.hide)', tr));
     });
   }
 
@@ -112,7 +196,6 @@
   if (S.get('gk-paged') !== false) root.classList.add('paged');
   mode.textContent = paged() ? 'Hepsi' : 'Tek tek';
 
-  // Zoom: tap a drawing to see it full size.
   const lb = $('.lightbox');
   for (const img of $$('.shot img')) img.addEventListener('click', () => { $('img', lb).src = img.src; lb.classList.add('open'); });
   lb.addEventListener('click', () => lb.classList.remove('open'));
@@ -131,12 +214,10 @@
     if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) go(dx < 0 ? 1 : -1);
     x0 = null;
   });
-  // In "all pages" mode, a page counts as seen once most of it was on screen.
   const io = new IntersectionObserver((es) => {
     for (const e of es) if (e.isIntersecting && !paged()) { mark(pages.indexOf(e.target)); paint(); }
   }, { threshold: 0.55 });
   pages.forEach((p) => io.observe(p));
   show(i, false);
-  // Rearranging the pages moves the scroll position: start at the top, or at the page a link points to.
   requestAnimationFrame(() => { if (hadHash) pages[i].scrollIntoView({ block: 'start' }); else scrollTo(0, 0); });
 })();

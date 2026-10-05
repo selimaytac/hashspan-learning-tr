@@ -1,6 +1,56 @@
 # Sözlük
 
-Her terim tek cümle. Ayrıntı için diyagramlara bak.
+Her terim tek cümle. Ayrıntı, terimin geçtiği konularda.
+
+## Kripto
+
+| Terim | Nedir? | Neden önemli? |
+|---|---|---|
+| Seed phrase (BIP-39) | Cüzdanın bütün anahtarlarını üreten 12 ya da 24 kelime. | Tek yedek budur; kaybolursa hesaplar da gider. |
+| Private key | Hesabı kontrol eden 256 bitlik gizli sayı. | Kimde varsa para onundur. |
+| Public key | Private key'den tek yönlü hesaplanan, paylaşılabilen anahtar. | Adres ondan türetilir. |
+| Adres | Ethereum'da public key'in keccak256 özetinin son 20 byte'ı. | Para bu numaraya gönderilir. |
+| HD cüzdan (BIP-32 / BIP-44) | Tek seed'den sınırsız anahtar türeten cüzdan yapısı. | Tek yedekle çok hesap. |
+| EIP-55 checksum | Adresteki büyük ve küçük harflerle yapılan yazım kontrolü. | Yanlış kopyalanan adresi yakalar. |
+| UTXO | Bitcoin'de harcanmamış çıktı; bakiye bunların toplamıdır. | Para üstü yeni bir çıktı olarak döner. |
+| EOA | Private key ile kontrol edilen sıradan Ethereum hesabı. | Kodu yoktur, tek anahtara bağlıdır. |
+| Custodial / non-custodial | Anahtarı bir şirketin mi yoksa kullanıcının mı tuttuğu. | Kimin tek başına imza atabildiğini belirler. |
+| Hot / warm / cold wallet | Anahtarın internete ne kadar yakın durduğu. | Güvenlik ile hız arasındaki denge. |
+| Hardware wallet | Anahtarı cihazın içinde tutan ve imzayı orada atan donanım. | Bilgisayar ele geçse de anahtar dışarı çıkmaz. |
+| Blind signing | Ne imzalandığını görmeden yalnızca bir hash'i onaylamak. | Büyük hack'lerin ortak nedenlerinden biri. |
+| HSM | Anahtarı dışarı vermeyen, sertifikalı kriptografi cihazı. | Kurumsal custody'nin temeli. |
+| Multisig | m-of-n imza kuralının zincirde tutulduğu hesap. | Tek anahtar tek hata noktası olmaktan çıkar. |
+| MPC / TSS | Anahtar parçalarının hiç birleşmeden ortak bir imza ürettiği yöntem. | Zincir tek imza görür; kural sağlayıcıda durur. |
+| Shamir (SSS) | Bir sırrı, k tanesi yeten n parçaya bölme yöntemi. | Yedekleme için; imza anında anahtar yeniden birleşir. |
+| Smart account | Hangi imzanın geçerli olduğuna kodun karar verdiği hesap. | Passkey, harcama limiti ve kurtarma mümkün olur. |
+| ERC-4337 | UserOperation, bundler ve EntryPoint ile çalışan account abstraction standardı. | Protokol değişmeden smart account. |
+| EIP-7702 | Bir EOA'nın bir kontratın kodunu ödünç almasını sağlayan işlem tipi (Pectra). | Adres aynı kalır; eski anahtar yine tam yetkilidir. |
+| Paymaster | Bir kullanıcının gas ücretini onun yerine ödeyen kontrat. | Kullanıcı ETH tutmadan işlem yapabilir. |
+| Passkey | Cihazın güvenli donanımında tutulan P-256 anahtarı (WebAuthn). | Şifresiz giriş ve imza. |
+| Session key | Süresi, tutarı ve kapsamı sınırlı ek anahtar. | Agent'lara sınırlı yetki vermenin yolu. |
+| Embedded wallet | Uygulamaya gömülü, e-posta ya da sosyal girişle açılan cüzdan. | Kullanıcı seed görmeden cüzdan sahibi olur. |
+| TEE | İçindeki kodu ve veriyi operatörden bile koruyan güvenli işlemci bölgesi. | Embedded wallet anahtarlarının sık tutulduğu yer. |
+| SIWE (EIP-4361) | Cüzdanla bir mesaj imzalayarak siteye giriş yapma standardı. | Sunucuda şifre tutulmaz. |
+| EIP-712 | Alanları okunabilir, yapılandırılmış veri imzası. | Permit ve x402 imzaları bu biçimdedir. |
+| approve / allowance | Bir kontratın senin token'ını harcamasına verilen izin. | Sınırsız onay, kontrat hacklenirse bakiyeyi riske atar. |
+| Permit (EIP-2612) | Token onayının bir tx yerine imzayla verilmesi. | Gas'sız onay; drainer'ların da hedefi. |
+| Permit2 | Her token için bir kez onay, sonra imzalı transferler sağlayan kontrat. | x402'nin upto şeması bunu kullanır. |
+| Address poisoning | Benzer görünen bir adresten sıfır değerli tx atıp kopyalama hatası beklemek. | Adresin tamamını karşılaştırmak gerekir. |
+| Proof of reserves | Bir borsanın varlıklarını ve müşteri bakiyelerini Merkle ağacıyla kanıtlaması. | Borçların tamamını kanıtlamaz. |
+| KYT | Zincir analiziyle paranın nereden gelip nereye gittiğini izleme. | Uyumun (compliance) parçası. |
+| Travel Rule | Kurumlar arası transferde gönderen ve alıcı bilgisinin de iletilmesi kuralı (FATF). | Lisanslı kurumlar için zorunlu. |
+| Konsensüs | Node'ların işlemlerin sırası üzerinde anlaşma yöntemi. | Aynı paranın iki kez harcanmasını önler. |
+| Sybil saldırısı | Bedava sahte kimliklerle oy çoğaltma. | PoW ve PoS bunu kıt bir kaynakla engeller. |
+| Proof of Stake | Oy hakkının kilitlenen coin'e bağlandığı konsensüs. | Hile yapanın teminatı kesilir. |
+| Validator | PoS'ta blok öneren ve oy veren katılımcı. | Ethereum'da 32 ETH ile başlar. |
+| Slot / epoch | Ethereum'da 12 saniyelik zaman dilimi ve 32 slotluk dönem. | Finality bu ritimle gelir. |
+| Finality | Bir işlemin artık geri alınamaz hâle gelmesi. | Ethereum'da tipik olarak yaklaşık 15 dakika. |
+| Slashing | Kuralı çiğneyen validator'ın stake'inden yapılan kesinti. | PoS'un güvenlik mekanizması. |
+| Liquid staking | Stake edilen coin karşılığında işlem görebilen bir token almak. | Likidite sağlar, depeg riski taşır. |
+| MEV | İşlemleri sıralama, ekleme ya da çıkarma gücünden elde edilen değer. | Sandwich saldırılarının kaynağı. |
+| Rollup | İşlemleri dışarıda çalıştırıp veriyi L1'e yazan L2. | Daha yüksek kapasite, daha düşük ücret. |
+| Sequencer | Bir L2'de işlemleri sıralayan, çoğunlukla tek operatör. | Hızlı onay verir ama kesinlik vermez. |
+| Köprü (bridge) | Varlığı bir zincirde kilitleyip diğerinde temsilini basan sistem. | En çok saldırıya uğrayan altyapılardan. |
 
 ## Blockchain
 
