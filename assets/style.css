@@ -205,7 +205,7 @@ h1, h2, h3 { font-family: var(--mono); text-wrap: balance; letter-spacing: -0.01
 .lightbox .btn { position: fixed; top: 14px; right: 14px; }
 @media (min-width: 981px) {
   .pg.portrait { grid-template-columns: auto minmax(0, 1fr); }
-  .pg.portrait .shot img { width: auto; max-height: calc(100vh - 196px); }
+  .pg.portrait .shot img { width: auto; height: calc(100vh - 196px); max-width: 100%; max-height: none; }
   .pg { scroll-margin-top: 76px; }
 }
 @media (max-width: 980px) {
@@ -300,3 +300,19 @@ body.topic footer { padding-bottom: 110px; }
   .sponsor em { display: inline; }
   .sponsor:hover { background: none; }
 }
+
+/* Glossary words inside notes */
+a.gl { color: inherit; text-decoration: underline dotted var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a.gl:hover { background: var(--yellow); color: var(--on-fill); }
+.term:target, .term.flash { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* Wide (older) drawings: full width, tap to zoom */
+.shot.wide img { cursor: zoom-in; }
+.zoomhint { font: 500 12.5px/1 var(--mono); color: var(--muted); margin-top: 10px; text-align: right; }
+.reader.single { grid-template-columns: minmax(0, 1fr); }
+.reader.single .toc { display: none; }
+.reader.single ~ .dock .dots, .reader.single ~ .dock #sheet { display: none; }
+
+/* Only the last page ends with the "topic done" card in page-by-page mode */
+.js.paged .endcard { display: none; }
+.js.paged .endcard.show { display: grid; }

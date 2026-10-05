@@ -3,6 +3,7 @@
 // and the repository README.
 // Run: node build.mjs   (BASE_URL sets the absolute address used in canonical links and the sitemap)
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,6 +20,7 @@ const FONTS = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;5
 // Topics of the crypto track that the hashspan track builds on.
 const PREREQ = ['k1-anahtar-adres-imza', 'k2-hesap-modelleri', 'k6-smart-account', 'k8-imza-ile-giris', 'k9-onaylar-tuzaklar'];
 
+const VER = createHash('sha256').update(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'assets', 'style.css'))).update(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'assets', 'app.js'))).digest('hex').slice(0, 10);
 const data = JSON.parse(readFileSync(join(root, 'content', 'data.json'), 'utf8'));
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const url = (p = '') => `${PATH}${p}`;
@@ -49,7 +51,7 @@ const layout = ({ title, description, path, image, body, jsonld = [], type = 'we
 ${image ? `<meta property="og:image" content="${abs(image)}"><meta name="twitter:card" content="summary_large_image">` : ''}
 <meta name="theme-color" content="#fbfaf6"><meta name="color-scheme" content="light dark"><link rel="icon" href="${url('favicon.svg')}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="${url('style.css')}">
+<link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="${url(`style.css?v=${VER}`)}">
 <script>try{var t=JSON.parse(localStorage.getItem('gk-theme'));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n')}
 </head><body${bodyClass ? ` class="${bodyClass}"` : ''}>
@@ -59,7 +61,7 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 <div class="meter"><i></i></div></header>
 <main>${body}</main>
 <footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
-<script src="${url('app.js')}" defer></script>
+<script src="${url(`app.js?v=${VER}`)}" defer></script>
 </body></html>
 `;
 
@@ -128,6 +130,34 @@ for (const track of data.tracks) {
   }));
 }
 
+// Glossary: content/sozluk.md tables become term cards, each linked to the topics that use the term.
+const md = readFileSync(join(root, 'content', 'sozluk.md'), 'utf8');
+const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+const terms = [];
+let cat = '';
+for (const line of md.split('\n')) {
+  if (line.startsWith('## ')) { cat = line.slice(3).trim(); continue; }
+  if (!line.startsWith('|') || /^\|\s*-/.test(line) || /^\|\s*Terim\s*\|/.test(line)) continue;
+  const [term, what, why] = line.slice(1, -1).split('|').map((c) => c.trim());
+  if (term) terms.push({ term, what, why, cat });
+}
+const slug = (x) => lower(x.replace(/`/g, '')).replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-|-$/g, '');
+// Glossary words found in page notes link to their card: the first word of each term, or each name before " / ".
+const linkKeys = terms.flatMap((x) => x.term.replace(/`/g, '').split(/\s*\/\s*/).map((k) => k.replace(/\s*\(.*\)$/, '').trim())
+  .filter((k) => k.length >= 3 && !/^(Adres|Konsensüs|Validator)$/.test(k)).map((k) => ({ k, x })));
+linkKeys.sort((a, b) => b.k.length - a.k.length);
+const reEsc = (k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const glossRe = new RegExp(`(^|[^\\p{L}\\p{N}_])(${linkKeys.map(({ k }) => reEsc(k)).join('|')})(?=$|[^\\p{L}\\p{N}_])`, 'giu');
+const linkNotes = (notes) => {
+  const used = new Set();
+  return notes.map((n) => esc(n).replace(glossRe, (m, pre, word) => {
+    const hit = linkKeys.find(({ k }) => lower(k) === lower(word));
+    if (!hit || used.has(hit.x.term)) return m;
+    used.add(hit.x.term);
+    return `${pre}<a class="gl" href="${url(`sozluk/#${slug(hit.x.term)}`)}" title="${esc(hit.x.what)}">${word}</a>`;
+  }));
+};
+
 // Topic pages.
 const arrowL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
 const arrowR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
@@ -141,13 +171,13 @@ for (const t of topics) {
 <p class="crumbs"><a href="${url()}">Harita</a> / <a href="${url(`${t.track.slug}/`)}">${esc(t.track.name)}</a> / ${esc(t.section.title)}</p>
 <header class="topic-head"><h1><span>${esc(t.code)}</span>${esc(t.title)}</h1><p>${esc(description)}</p>
 <ul class="meta"><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
-<div class="reader">
+<div class="reader${t.pages.length === 1 ? ' single' : ''}">
 <aside class="toc" aria-label="Sayfalar"><span class="eyebrow">${esc(t.code)} · ${t.pages.length} sayfa</span><ol>${t.pages.map((p, k) => `<li><a href="#s${k + 1}">${esc(p.title)}</a></li>`).join('')}</ol></aside>
 <article>
 ${t.pages.map((p, k) => `<section class="pg${p.h > p.w ? ' portrait' : ''}" id="s${k + 1}" data-id="${p.id}">
-<figure class="shot"><img src="${url(`img/${p.id}.webp`)}" width="${p.w}" height="${p.h}" alt="${esc(`${p.title}: ${p.text}`.slice(0, 480))}"${k ? ' loading="lazy"' : ''} decoding="async"></figure>
+<figure class="shot${p.h > p.w ? '' : ' wide'}"><img src="${url(`img/${p.id}.webp`)}" width="${p.w}" height="${p.h}" style="aspect-ratio:${p.w}/${p.h}" alt="${esc(`${p.title}: ${p.text}`.slice(0, 480))}"${k ? ' loading="lazy"' : ''} decoding="async">${p.h > p.w ? '' : '<figcaption class="zoomhint">Büyütmek için dokun ⤢</figcaption>'}</figure>
 <div class="notes"><h2><small>${esc(t.code)}.${k + 1} / ${t.pages.length}</small>${esc(p.title)}</h2>
-${p.notes.length ? `<ul>${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+${p.notes.length ? `<ul>${linkNotes(p.notes).map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
 ${p.text ? `<details><summary>Çizimdeki yazılar</summary><p>${esc(p.text)}</p></details>` : ''}</div>
 </section>`).join('\n')}
 <section class="endcard"><span class="eyebrow">Konu bitti</span><h2>${t.next ? `Sırada: ${esc(`${t.next.code} · ${t.next.title}`)}` : 'Son konuya geldin'}</h2>
@@ -170,21 +200,11 @@ ${t.next?.description ? `<p>${esc(t.next.description)}</p>` : ''}
   }));
 }
 
-// Glossary: content/sozluk.md tables become term cards, each linked to the topics that use the term.
-const md = readFileSync(join(root, 'content', 'sozluk.md'), 'utf8');
-const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-const terms = [];
-let cat = '';
-for (const line of md.split('\n')) {
-  if (line.startsWith('## ')) { cat = line.slice(3).trim(); continue; }
-  if (!line.startsWith('|') || /^\|\s*-/.test(line) || /^\|\s*Terim\s*\|/.test(line)) continue;
-  const [term, what, why] = line.slice(1, -1).split('|').map((c) => c.trim());
-  if (term) terms.push({ term, what, why, cat });
-}
 const index = topics.map((t) => ({ t, text: findText(t) }));
 const usedIn = (term) => {
   const keys = term.replace(/`/g, '').split(/\s*\/\s*|\s*\(/).map((k) => lower(k.replace(/\)$/, '').trim())).filter((k) => k.length > 2);
-  return index.filter(({ text }) => keys.some((k) => text.includes(k))).slice(0, 4).map(({ t }) => t);
+  const res = keys.map((k) => new RegExp(`(^|[^\\p{L}\\p{N}_])${reEsc(k)}(?=$|[^\\p{L}\\p{N}_])`, 'u'));
+  return index.filter(({ text }) => res.some((r) => r.test(text))).slice(0, 4).map(({ t }) => t);
 };
 const cats = [...new Set(terms.map((x) => x.cat))];
 put('sozluk/index.html', layout({
@@ -194,7 +214,7 @@ put('sozluk/index.html', layout({
 <p class="result" id="result" aria-live="polite"></p>
 <div class="terms">${terms.map((x) => {
     const used = usedIn(x.term);
-    return `<article class="term" data-cat="${esc(x.cat)}" data-term="${esc(x.term)}" data-find="${esc(lower(`${x.term} ${x.what} ${x.why}`))}"><div class="term-top"><span class="cat">${esc(x.cat)}</span><button class="fav" type="button" aria-pressed="false" aria-label="Favorilere ekle: ${esc(x.term.replace(/`/g, ''))}">☆</button></div><h3>${inline(x.term)}</h3><p>${inline(x.what)}</p>${x.why ? `<p class="why">${inline(x.why)}</p>` : ''}${used.length ? `<ul>${used.map((t) => `<li><a class="chip" href="${url(t.path)}" title="${esc(`${t.code} · ${t.title}`)}">${esc(t.track.slug === 'hashspan' ? `hashspan ${t.code}` : t.code)}</a></li>`).join('')}</ul>` : ''}</article>`;
+    return `<article class="term" id="${slug(x.term)}" data-cat="${esc(x.cat)}" data-term="${esc(x.term)}" data-find="${esc(lower(`${x.term} ${x.what} ${x.why}`))}"><div class="term-top"><span class="cat">${esc(x.cat)}</span><button class="fav" type="button" aria-pressed="false" aria-label="Favorilere ekle: ${esc(x.term.replace(/`/g, ''))}">☆</button></div><h3>${inline(x.term)}</h3><p>${inline(x.what)}</p>${x.why ? `<p class="why">${inline(x.why)}</p>` : ''}${used.length ? `<ul>${used.map((t) => `<li><a class="chip" href="${url(t.path)}" title="${esc(`${t.code} · ${t.title}`)}">${esc(t.track.slug === 'hashspan' ? `hashspan ${t.code}` : t.code)}</a></li>`).join('')}</ul>` : ''}</article>`;
   }).join('\n')}</div><nav class="gpager" aria-label="Sözlük sayfaları"></nav></div>`,
 }));
 

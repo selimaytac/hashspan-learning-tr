@@ -55,7 +55,7 @@
       $('.pager-name', tr).textContent = mods[k].querySelector('h3').textContent;
       $$('[data-step="-1"]', tr).forEach((b) => { b.disabled = k === 0; });
       $$('[data-step="1"]', tr).forEach((b) => { b.disabled = k === mods.length - 1; });
-      history.replaceState(null, '', `#${mods[k].id}`);
+      if (scroll !== undefined) history.replaceState(null, '', `#${mods[k].id}`);
       if (scroll) ($('.tracktabs') || tr).scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
     function showTrack(slug, k, scroll) {
@@ -65,9 +65,9 @@
       const tr = tracks.find((x) => x.dataset.track === slug);
       showSection(tr, k ?? state.index[slug] ?? 0, scroll);
     }
-    tabs.forEach((b) => b.addEventListener('click', () => showTrack(b.dataset.track)));
+    tabs.forEach((b) => b.addEventListener('click', () => showTrack(b.dataset.track, undefined, false)));
     for (const tr of tracks) {
-      $$('[data-go]', tr).forEach((b) => b.addEventListener('click', () => showSection(tr, Number(b.dataset.go))));
+      $$('[data-go]', tr).forEach((b) => b.addEventListener('click', () => showSection(tr, Number(b.dataset.go), false)));
       $$('[data-step]', tr).forEach((b) => b.addEventListener('click', () => showSection(tr, state.index[tr.dataset.track] + Number(b.dataset.step), b.closest('.pager-foot') !== null)));
     }
     // Start at the linked section, else where the suggested next topic is.
@@ -75,7 +75,8 @@
     const start = linked || $('.chain > li.next')?.closest('.module') || $('.module');
     const startTrack = start.closest('.track');
     for (const tr of tracks) state.index[tr.dataset.track] = 0;
-    showTrack(startTrack.dataset.track, modulesOf(startTrack).indexOf(start), false);
+    showTrack(startTrack.dataset.track, modulesOf(startTrack).indexOf(start));
+    if (!linked) requestAnimationFrame(() => scrollTo(0, 0));
   }
 
   // Search (map and glossary), glossary categories, favourites and pages.
@@ -132,7 +133,10 @@
       gpage = 0; applyGlossary();
     });
     q.addEventListener('input', () => { gpage = 0; applyGlossary(); });
+    const target = location.hash && terms.find((t) => `#${t.id}` === decodeURIComponent(location.hash));
+    if (target) gpage = Math.floor(terms.indexOf(target) / PER);
     applyGlossary();
+    if (target) { target.classList.add('flash'); requestAnimationFrame(() => target.scrollIntoView({ block: 'center' })); }
   } else if (q) {
     const cards = $$('[data-find]');
     q.addEventListener('input', () => {
@@ -175,6 +179,7 @@
     const end = i === pages.length - 1;
     next.querySelector('span').textContent = end ? (nt ? 'Sonraki konu' : 'Bitti') : 'İleri';
     next.classList.toggle('ok', end);
+    $('.endcard')?.classList.toggle('show', end);
     mark(i); paint();
     S.set('gk-last', { href: `${location.pathname}#${pages[i].id}`, title: `${document.title.split(' | ')[0]} · ${i + 1}/${pages.length}` });
     history.replaceState(null, '', `#${pages[i].id}`);
