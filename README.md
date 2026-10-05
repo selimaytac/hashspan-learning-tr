@@ -1,10 +1,10 @@
 # Görsel Kripto ve hashspan
 
-Kripto cüzdanları, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: az yazı, çok çizim. Türkçe ve ücretsiz.
+Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sayfada bir fikir, bir çizim. Türkçe ve ücretsiz.
 
 **Site:** https://selimaytac.github.io/hashspan-learning-tr/
 
-Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç madde. 58 konu, 370 sayfa.
+58 konu, 370 çizim, 1201 not. Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç not.
 
 ## Kripto akademisi
 
@@ -122,9 +122,10 @@ AI agent'ların zincire gönderdiği işlemleri OpenTelemetry ile izlemek: hashs
 
 ## Yapı
 
-- `content/`: görseller (`img/`), sosyal önizlemeler (`og/`), konu ve sayfa verisi (`data.json`), sözlük (`sozluk.md`)
+- `content/`: çizimler (`img/`), sosyal önizlemeler (`og/`), konu ve sayfa verisi (`data.json`), sözlük (`sozluk.md`)
+- `assets/`: sitenin stili ve davranışı
 - `build.mjs`: siteyi `_site/` altına üretir (`node build.mjs`, bağımlılık yok); GitHub Actions her push'ta GitHub Pages'e yayınlar
 
 ## Lisans
 
-İçerik (görseller ve metinler) [CC BY 4.0](LICENSE): kaynak göstererek kullanabilirsin. Kod [MIT](LICENSE-CODE).
+İçerik (çizimler ve metinler) [CC BY 4.0](LICENSE): kaynak göstererek kullanabilirsin. Kod [MIT](LICENSE-CODE).

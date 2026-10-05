@@ -1,5 +1,6 @@
-// Builds the static site into _site/ from content/: a map of every topic, one HTML page per topic (all of its
-// pages, images and notes, readable without JavaScript), a glossary, sitemap.xml, robots.txt and llms.txt.
+// Builds the static site into _site/ from content/ and assets/: a roadmap of every topic, one HTML page per topic
+// (all of its pages, drawings and notes, readable without JavaScript), a glossary, sitemap.xml, robots.txt, llms.txt
+// and the repository README.
 // Run: node build.mjs   (BASE_URL sets the absolute address used in canonical links and the sitemap)
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -8,18 +9,22 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, '_site');
 const BASE = (process.env.BASE_URL ?? 'https://selimaytac.github.io/hashspan-learning-tr').replace(/\/$/, '');
-const PATH = new URL(`${BASE}/`).pathname; // e.g. /hashspan-learning-tr/
-const SITE = 'Görsel Kripto ve hashspan';
-const SITE_DESC = 'Kripto cüzdanları, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: az yazı, çok çizim. Türkçe ve ücretsiz.';
+const PATH = new URL(`${BASE}/`).pathname;
+const SITE = 'Görsel Kripto';
+const SITE_SUB = 've hashspan';
+const SITE_DESC = 'Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sayfada bir fikir, bir çizim. Türkçe ve ücretsiz.';
 const LICENSE = 'https://creativecommons.org/licenses/by/4.0/deed.tr';
 const REPO = 'https://github.com/selimaytac/hashspan-learning-tr';
+const FONTS = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap';
+// Topics of the crypto track that the hashspan track builds on.
+const PREREQ = ['k1-anahtar-adres-imza', 'k2-hesap-modelleri', 'k6-smart-account', 'k8-imza-ile-giris', 'k9-onaylar-tuzaklar'];
 
 const data = JSON.parse(readFileSync(join(root, 'content', 'data.json'), 'utf8'));
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const url = (p = '') => `${PATH}${p}`;
 const abs = (p = '') => `${BASE}/${p}`;
+const lower = (s) => s.toLocaleLowerCase('tr');
 
-// Every topic in reading order, with its neighbours.
 const topics = [];
 for (const track of data.tracks) {
   for (const section of track.sections) {
@@ -28,155 +33,31 @@ for (const track of data.tracks) {
 }
 topics.forEach((t, i) => { t.prev = topics[i - 1]; t.next = topics[i + 1]; });
 const pageCount = topics.reduce((n, t) => n + t.pages.length, 0);
+const noteCount = topics.reduce((n, t) => n + t.pages.reduce((m, p) => m + p.notes.length, 0), 0);
+const minutes = (t) => Math.max(3, Math.round(t.pages.length * 1.5));
+const findText = (t) => lower([t.code, t.title, t.description, ...t.pages.flatMap((p) => [p.title, ...p.notes, p.text])].join(' '));
 
-const css = `
-:root{--bg:#f7f6f3;--card:#fff;--ink:#1d1d1f;--muted:#5d6068;--line:#e2dfd8;--accent:#1864ab;--accent-bg:#e7f0fa;--done:#2b8a3e;--done-bg:#e6f5ea;--shadow:0 1px 3px rgba(0,0,0,.08)}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141517;--card:#1e1f22;--ink:#ececea;--muted:#a1a4ab;--line:#33353a;--accent:#74b0f4;--accent-bg:#1b2a3b;--done:#69db7c;--done-bg:#1b3022;--shadow:none}}
-:root[data-theme=dark]{--bg:#141517;--card:#1e1f22;--ink:#ececea;--muted:#a1a4ab;--line:#33353a;--accent:#74b0f4;--accent-bg:#1b2a3b;--done:#69db7c;--done-bg:#1b3022;--shadow:none}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--accent)}img{max-width:100%;height:auto}
-.wrap{max-width:860px;margin:0 auto;padding:0 16px}
-.top{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;gap:12px;align-items:center;min-height:52px}
-.brand{font-weight:700;text-decoration:none;color:var(--ink);white-space:nowrap}
-.top nav{display:flex;gap:14px;margin-left:auto;font-size:15px}.top nav a{text-decoration:none}
-.bar{height:3px;background:var(--line)}.bar i{display:block;height:100%;width:0;background:var(--done);transition:width .2s}
-h1{font-size:30px;line-height:1.25;margin:28px 0 8px}h2{font-size:21px;line-height:1.3;margin:0 0 8px}
-.lead{color:var(--muted);font-size:18px;margin:0 0 20px}
-.crumbs{font-size:14px;color:var(--muted);margin-top:16px}.crumbs a{color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:15px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);text-decoration:none;cursor:pointer}
-.btn:hover{border-color:var(--accent)}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn[disabled]{opacity:.4;cursor:default}
-.search{width:100%;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin:4px 0 18px}
-.track{margin:28px 0}.track>h2{font-size:24px;margin-bottom:2px}.track>p{color:var(--muted);margin:0 0 12px}
-details.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 12px;box-shadow:var(--shadow)}
-details.sec>summary{cursor:pointer;list-style:none;padding:14px 18px;font-weight:650;display:flex;gap:10px;align-items:center}
-details.sec>summary::-webkit-details-marker{display:none}
-details.sec>summary::before{content:'▸';color:var(--muted)}details.sec[open]>summary::before{content:'▾'}
-.sec .meta{margin-left:auto;color:var(--muted);font-weight:400;font-size:14px}
-.path{list-style:none;margin:0;padding:2px 18px 14px 46px;position:relative}
-.path::before{content:'';position:absolute;left:29px;top:0;bottom:22px;border-left:2px solid var(--line)}
-.path li{position:relative;margin:8px 0}
-.path li::before{content:'';position:absolute;left:-23px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--muted)}
-.path li.part::before{background:var(--accent);border-color:var(--accent)}.path li.done::before{background:var(--done);border-color:var(--done)}
-.path a{display:block;padding:8px 12px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--ink);background:var(--bg)}
-.path li.done a{border-color:var(--done);background:var(--done-bg)}
-.path a small{display:block;color:var(--muted);font-size:13px;line-height:1.4}
-.path a b{color:var(--muted);font-weight:600;margin-right:4px}
-.resume{display:none;margin:0 0 16px}.resume.on{display:flex}
-.pg{scroll-margin-top:64px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 20px;box-shadow:var(--shadow)}
-.pg figure{margin:0 0 12px;text-align:center}.pg img{border-radius:10px;background:#fff;border:1px solid var(--line)}
-.pg.portrait img{max-height:78vh;width:auto}
-.pg .no{color:var(--muted);font-size:14px}
-.pg ul{margin:6px 0 4px;padding-left:22px}.pg li{margin:4px 0}
-.pg details{margin-top:8px;font-size:14px;color:var(--muted)}.pg details summary{cursor:pointer}
-.steps{display:none;gap:8px;align-items:center;justify-content:space-between;position:sticky;bottom:0;background:var(--bg);padding:10px 0 14px;z-index:4}
-.js .steps{display:flex}.steps .count{color:var(--muted);font-size:15px}
-.js.paged .pg{display:none}.js.paged .pg.cur{display:block}
-.mode{font-size:14px}
-.next-topic{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;margin:24px 0 40px}
-.next-topic a{flex:1 1 240px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-decoration:none;color:var(--ink)}
-.next-topic small{display:block;color:var(--muted)}
-table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0 24px;background:var(--card)}
-th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
-.tablewrap{overflow-x:auto}
-footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px;padding:20px 0 40px;margin-top:40px}
-code{font-size:.9em;background:var(--accent-bg);padding:1px 5px;border-radius:5px}
-.hide{display:none!important}
-@media (min-width:1000px){.wrap{max-width:1140px}.pg.portrait{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:28px;align-items:start}.pg.portrait figure{grid-row:1/span 4;margin:0}.pg.portrait img{max-height:84vh}.pg.portrait h2{margin-top:8px}.js.paged .pg.portrait.cur{display:grid}}
-@media (max-width:600px){.brand{font-size:15px}.top nav a:first-child{display:none}.top nav{gap:10px;font-size:14px}.top .wrap{gap:8px}h1{font-size:25px}.pg{padding:10px;border-radius:12px}.top nav{gap:10px}.pg.portrait img{max-height:none;width:100%}}
-`;
+const logo = `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="31" rx="8" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/><circle cx="12" cy="17" r="5" fill="#fff" stroke="#1e1e1e" stroke-width="2"/><path d="M17 17h10M23.5 17v4.5M27 17v3" stroke="#1e1e1e" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
+const searchIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
 
-// Progress lives in this browser only (localStorage): which pages were seen and where reading stopped.
-const js = `
-(() => {
-  const S = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const seen = new Set(S.get('gk-seen') || []);
-  const save = () => S.set('gk-seen', [...seen]);
-  document.documentElement.classList.add('js');
-  const theme = S.get('gk-theme'); if (theme) document.documentElement.dataset.theme = theme;
-  const tt = document.getElementById('theme');
-  if (tt) tt.onclick = (e) => { e.preventDefault(); const d = document.documentElement; const next = (d.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark' ? 'light' : 'dark'; d.dataset.theme = next; S.set('gk-theme', next); };
-
-  // Map: progress per topic, resume link, search.
-  for (const li of document.querySelectorAll('[data-pages]')) {
-    const ids = li.dataset.pages.split(' ');
-    const n = ids.filter((id) => seen.has(id)).length;
-    if (n === ids.length) li.classList.add('done'); else if (n) li.classList.add('part');
-    if (n && n < ids.length) li.querySelector('small').textContent += ' · ' + n + '/' + ids.length;
-  }
-  for (const sec of document.querySelectorAll('details.sec')) {
-    const items = [...sec.querySelectorAll('[data-pages]')];
-    const done = items.filter((x) => x.classList.contains('done')).length;
-    const m = sec.querySelector('.meta'); if (m && done) m.textContent = done + '/' + items.length + ' konu';
-  }
-  const last = S.get('gk-last'), resume = document.getElementById('resume');
-  if (resume && last) { resume.classList.add('on'); resume.querySelector('a').href = last.href; resume.querySelector('span').textContent = last.title; }
-  const q = document.getElementById('q');
-  if (q) q.oninput = () => {
-    const v = q.value.trim().toLocaleLowerCase('tr');
-    for (const li of document.querySelectorAll('[data-pages]')) li.classList.toggle('hide', !!v && !li.dataset.find.includes(v));
-    for (const sec of document.querySelectorAll('details.sec')) { const any = sec.querySelector('[data-pages]:not(.hide)'); sec.classList.toggle('hide', !any); if (v) sec.open = !!any; }
-  };
-
-  // Topic: one page at a time (or all), arrows, swipe, progress.
-  const pages = [...document.querySelectorAll('.pg')];
-  if (!pages.length) return;
-  const root = document.documentElement, bar = document.querySelector('.bar i'), count = document.getElementById('count');
-  const prev = document.getElementById('prev'), next = document.getElementById('next'), mode = document.getElementById('mode');
-  let i = Math.max(0, pages.findIndex((p) => '#' + p.id === location.hash));
-  const paged = () => root.classList.contains('paged');
-  function mark(k) { const id = pages[k].dataset.id; if (!seen.has(id)) { seen.add(id); save(); } }
-  function progress() { const n = pages.filter((p) => seen.has(p.dataset.id)).length; bar.style.width = (100 * n / pages.length) + '%'; }
-  function show(k, scroll) {
-    i = Math.max(0, Math.min(pages.length - 1, k));
-    pages.forEach((p, j) => p.classList.toggle('cur', j === i));
-    count.textContent = (i + 1) + ' / ' + pages.length;
-    prev.disabled = i === 0;
-    next.textContent = i === pages.length - 1 ? (document.getElementById('nt') ? 'Sonraki konu →' : 'Bitti ✓') : 'İleri →';
-    mark(i); progress();
-    S.set('gk-last', { href: location.pathname + '#' + pages[i].id, title: document.title.split(' | ')[0] + ' · ' + (i + 1) + '/' + pages.length });
-    history.replaceState(null, '', '#' + pages[i].id);
-    if (scroll) pages[i].scrollIntoView({ block: 'start' });
-  }
-  function go(d) {
-    if (d > 0 && i === pages.length - 1) { const nt = document.getElementById('nt'); if (nt) location.href = nt.href; return; }
-    show(i + d, true);
-  }
-  prev.onclick = () => go(-1); next.onclick = () => go(1);
-  mode.onclick = () => { root.classList.toggle('paged'); S.set('gk-paged', paged()); mode.textContent = paged() ? 'Tüm sayfalar' : 'Sayfa sayfa'; show(i, true); };
-  if (S.get('gk-paged') !== false) root.classList.add('paged');
-  mode.textContent = paged() ? 'Tüm sayfalar' : 'Sayfa sayfa';
-  addEventListener('keydown', (e) => { if (e.target.closest('input,textarea')) return; if (e.code === 'ArrowRight') go(1); if (e.code === 'ArrowLeft') go(-1); });
-  let x0 = null, y0 = 0;
-  addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
-  addEventListener('touchend', (e) => { if (x0 === null || !paged()) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) go(dx < 0 ? 1 : -1); x0 = null; });
-  // In "all pages" mode, a page counts as seen once most of it was on screen.
-  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting && !paged()) { const k = pages.indexOf(e.target); mark(k); progress(); } }, { threshold: 0.6 });
-  pages.forEach((p) => io.observe(p));
-  const hadHash = pages.some((p) => '#' + p.id === location.hash);
-  show(i, false);
-  // Rearranging the pages moves the scroll position; start at the top, or at the page the link points to.
-  requestAnimationFrame(() => { if (hadHash) (paged() ? document.querySelector('h1') : pages[i]).scrollIntoView({ block: 'start' }); else scrollTo(0, 0); });
-})();
-`;
-
-const layout = ({ title, description, path, image, body, jsonld = [], type = 'website' }) => `<!doctype html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+const layout = ({ title, description, path, image, body, jsonld = [], type = 'website', nav = '', bodyClass = '' }) => `<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${abs(path)}"><link rel="license" href="${LICENSE}">
-<meta property="og:type" content="${type}"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="${esc(SITE)}">
+<meta property="og:type" content="${type}"><meta property="og:locale" content="tr_TR"><meta property="og:site_name" content="${esc(`${SITE} ${SITE_SUB}`)}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${abs(path)}">
 ${image ? `<meta property="og:image" content="${abs(image)}"><meta name="twitter:card" content="summary_large_image">` : ''}
-<meta name="theme-color" content="#1864ab"><link rel="icon" href="${url('favicon.svg')}" type="image/svg+xml">
-<link rel="stylesheet" href="${url('style.css')}">
+<meta name="theme-color" content="#fbfaf6"><link rel="icon" href="${url('favicon.svg')}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="${FONTS}"><link rel="stylesheet" href="${url('style.css')}">
+<script>try{var t=JSON.parse(localStorage.getItem('gk-theme'));if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, '\\u003c')}</script>`).join('\n')}
-</head><body>
-<header class="top"><div class="wrap"><a class="brand" href="${url()}">${esc(SITE)}</a>
-<nav><a href="${url()}">Harita</a><a href="${url('sozluk/')}">Sözlük</a><a href="${url('hakkinda/')}">Hakkında</a><a href="#" id="theme" aria-label="Tema">◐</a></nav></div><div class="bar"><i></i></div></header>
-<main class="wrap">${body}</main>
-<footer><div class="wrap">İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · Kod MIT · <a href="${REPO}">GitHub</a></div></footer>
+</head><body${bodyClass ? ` class="${bodyClass}"` : ''}>
+<header class="top"><div class="wrap"><a class="brand" href="${url()}">${logo}<span><b>${SITE}</b><small>${SITE_SUB}</small></span></a>
+<nav aria-label="Site"><a href="${url()}"${nav === 'map' ? ' aria-current="page"' : ''}>Harita</a><a href="${url('sozluk/')}"${nav === 'gloss' ? ' aria-current="page"' : ''}>Sözlük</a><a class="wide" href="${url('hakkinda/')}"${nav === 'about' ? ' aria-current="page"' : ''}>Hakkında</a><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">◐</button></nav></div>
+<div class="meter"><i></i></div></header>
+<main>${body}</main>
+<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
 <script src="${url('app.js')}" defer></script>
 </body></html>
 `;
@@ -184,112 +65,174 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 const files = new Map();
 const put = (path, html) => files.set(path, html);
 
-// Map.
-const findText = (t) => [t.code, t.title, t.description, ...t.pages.flatMap((p) => [p.title, ...p.notes, p.text])].join(' ').toLocaleLowerCase('tr');
-const mapBody = `
-<h1>${esc(SITE)}</h1>
-<p class="lead">${esc(SITE_DESC)} ${topics.length} konu, ${pageCount} sayfa.</p>
-<p class="resume" id="resume"><a class="btn primary" href="#">Kaldığın yerden devam et: <span></span></a></p>
-<input class="search" id="q" type="search" placeholder="Ara: imza, MPC, span, finality…" aria-label="Konularda ara">
-${data.tracks.map((track) => `<section class="track"><h2 id="${track.slug}"><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p>
-${track.sections.map((sec) => `<details class="sec" open><summary>${esc(sec.title)}<span class="meta">${sec.topics.length} konu</span></summary><ol class="path">
-${sec.topics.map((t) => `<li data-pages="${t.pages.map((p) => p.id).join(' ')}" data-find="${esc(findText(t))}"><a href="${url(`${track.slug}/${t.slug}/`)}"><b>${esc(t.code)}</b>${esc(t.title)}<small>${t.pages.length} sayfa${t.description ? ' · ' + esc(t.description) : ''}</small></a></li>`).join('\n')}
-</ol></details>`).join('\n')}</section>`).join('\n')}`;
+// One section of a track as a roadmap module: tabs, title, a chain of topic nodes with handwritten margin notes.
+const moduleHtml = (track, sec) => {
+  const pages = sec.topics.reduce((n, t) => n + t.pages.length, 0);
+  return `<section class="module" id="${track.slug}-${lower(sec.title).replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-|-$/g, '')}">
+<span class="tab l">${esc(track.name)}</span><span class="tab r">${sec.topics.length} konu · ${pages} sayfa</span>
+<h3>${esc(sec.title)}</h3>
+<ol class="chain">${sec.topics.map((t, k) => {
+    const notes = t.pages.slice(0, 4).map((p) => `<li>- ${esc(p.title)}</li>`).join('') + (t.pages.length > 4 ? '<li>- …</li>' : '');
+    return `<li data-pages="${t.pages.map((p) => p.id).join(' ')}" data-find="${esc(findText(t))}">
+<ul class="ann"${k % 2 ? ' hidden' : ''}>${notes}</ul>
+<a class="node" href="${url(`${track.slug}/${t.slug}/`)}"><b>${esc(t.code)}</b>${esc(t.title)}<small>${t.pages.length} sayfa · ${minutes(t)} dk</small></a>
+<ul class="ann side"${k % 2 ? '' : ' hidden'}>${notes}</ul>
+</li>`;
+  }).join('\n')}</ol></section>`;
+};
+
+const roadmap = (track) => {
+  const prereq = track.slug === 'hashspan'
+    ? `<div class="prereq"><h3>Ön koşullar</h3><p>Anahtar, imza ve hesap kavramlarını bilmiyorsan önce bunlara bak:</p><ul>${PREREQ.map((slug) => topics.find((t) => t.slug === slug)).filter(Boolean).map((t) => `<li><a class="chip" href="${url(t.path)}">${esc(t.code)} · ${esc(t.title)}</a></li>`).join('')}</ul></div><div class="connector"><span>sonra</span></div>`
+    : '';
+  return `<div class="flow">${prereq}${track.sections.map((sec) => moduleHtml(track, sec)).join('<div class="connector"><span>sonra</span></div>')}</div>`;
+};
+
+const trackBlock = (track) => `<section class="track" id="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p></div>${roadmap(track)}</section>`;
+
+const legend = `<ul class="legend" aria-label="Renkler"><li class="chip">başlanmadı</li><li class="chip y">yarım</li><li class="chip g">bitti</li><li class="chip b">sıradaki</li></ul>`;
+const searchBox = (ph) => `<label class="search">${searchIcon}<input id="q" type="search" placeholder="${ph}" aria-label="Ara"></label>`;
+
+// Home.
+const first = topics[0];
+const heroPage = topics.flatMap((t) => t.pages).find((p) => p.id === 'k1-05-adres') ?? first.pages[0];
+const hero = `<div class="wrap"><section class="hero">
+<div><span class="eyebrow">Türkçe · ücretsiz · açık kaynak</span>
+<h1>Kriptoyu <em>çizerek</em> öğren.</h1>
+<p>Anahtardan konsensüse, cüzdandan custody'ye; sonra AI agent'ların zincirdeki işlemlerini OpenTelemetry ile izlemek. Her sayfada tek fikir ve bir çizim.</p>
+<ul class="stats"><li><b>${topics.length}</b>konu</li><li><b>${pageCount}</b>çizim</li><li><b>${noteCount}</b>not</li></ul>
+<div class="actions"><a class="btn go" href="${url(first.path)}">Baştan başla: ${esc(first.code)} →</a><a class="btn" id="resume" href="#" hidden>Devam et: <span></span></a></div></div>
+<div class="sticker"><img src="${url(`img/${heroPage.id}.webp`)}" width="${heroPage.w}" height="${heroPage.h}" alt="Public key'den Ethereum adresine: keccak256 ve son 20 byte"><span class="hand">her sayfa böyle bir çizim ↘</span></div>
+</section>
+<div class="toolbar">${searchBox('Ara: imza, MPC, span, finality…')}${legend}</div>
+${data.tracks.map(trackBlock).join('\n')}
+</div>`;
 put('index.html', layout({
-  title: `${SITE}: çizimlerle kripto ve on-chain gözlemlenebilirlik`, description: SITE_DESC, path: '', body: mapBody,
-  jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: abs(), inLanguage: 'tr', description: SITE_DESC }],
+  title: `${SITE} ${SITE_SUB}: çizimlerle kripto ve on-chain gözlemlenebilirlik`, description: SITE_DESC, path: '', body: hero, nav: 'map', image: `og/kripto-${first.slug}.jpg`,
+  jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: `${SITE} ${SITE_SUB}`, url: abs(), inLanguage: 'tr', description: SITE_DESC }],
 }));
 
 // Track pages.
 for (const track of data.tracks) {
   const tt = topics.filter((t) => t.track === track);
   put(`${track.slug}/index.html`, layout({
-    title: `${track.name} | ${SITE}`, description: track.description, path: `${track.slug}/`,
-    body: `<p class="crumbs"><a href="${url()}">Harita</a> › ${esc(track.name)}</p><h1>${esc(track.name)}</h1><p class="lead">${esc(track.description)}</p>
-${track.sections.map((sec) => `<h2>${esc(sec.title)}</h2><ol class="path">${sec.topics.map((t) => `<li data-pages="${t.pages.map((p) => p.id).join(' ')}" data-find=""><a href="${url(`${track.slug}/${t.slug}/`)}"><b>${esc(t.code)}</b>${esc(t.title)}<small>${t.pages.length} sayfa${t.description ? ' · ' + esc(t.description) : ''}</small></a></li>`).join('')}</ol>`).join('\n')}`,
-    jsonld: [{ '@context': 'https://schema.org', '@type': 'Course', name: track.name, description: track.description, inLanguage: 'tr', url: abs(`${track.slug}/`), license: LICENSE, isAccessibleForFree: true, provider: { '@type': 'Organization', name: SITE, url: abs() }, hasPart: tt.map((t) => ({ '@type': 'LearningResource', name: `${t.code} · ${t.title}`, url: abs(t.path) })) }],
+    title: `${track.name} | ${SITE}`, description: track.description, path: `${track.slug}/`, nav: 'map',
+    body: `<div class="wrap"><p class="crumbs"><a href="${url()}">Harita</a> / ${esc(track.name)}</p><div class="toolbar">${searchBox(`${track.name} içinde ara…`)}${legend}</div>${trackBlock(track)}</div>`,
+    jsonld: [{ '@context': 'https://schema.org', '@type': 'Course', name: track.name, description: track.description, inLanguage: 'tr', url: abs(`${track.slug}/`), license: LICENSE, isAccessibleForFree: true, provider: { '@type': 'Organization', name: `${SITE} ${SITE_SUB}`, url: abs() }, hasPart: tt.map((t) => ({ '@type': 'LearningResource', name: `${t.code} · ${t.title}`, url: abs(t.path) })) }],
   }));
 }
 
 // Topic pages.
+const arrowL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+const arrowR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 for (const t of topics) {
   const name = `${t.code} · ${t.title}`;
   const description = t.description || `${t.title}: ${t.pages.length} sayfalık görsel anlatım.`;
   const og = `og/${t.track.slug}-${t.slug}.jpg`;
-  const body = `<p class="crumbs"><a href="${url()}">Harita</a> › <a href="${url(`${t.track.slug}/`)}">${esc(t.track.name)}</a> › ${esc(t.section.title)}</p>
-<h1>${esc(name)}</h1><p class="lead">${esc(description)}</p>
-${t.prev ? `<p class="crumbs">Önce: <a href="${url(t.prev.path)}">${esc(`${t.prev.code} · ${t.prev.title}`)}</a></p>` : ''}
+  const pre = t.track.slug === 'hashspan' && t === topics.find((x) => x.track === t.track)
+    ? PREREQ.map((slug) => topics.find((x) => x.slug === slug)).filter(Boolean) : (t.prev && t.prev.track === t.track ? [t.prev] : []);
+  const body = `<div class="wrap">
+<p class="crumbs"><a href="${url()}">Harita</a> / <a href="${url(`${t.track.slug}/`)}">${esc(t.track.name)}</a> / ${esc(t.section.title)}</p>
+<header class="topic-head"><h1><span>${esc(t.code)}</span>${esc(t.title)}</h1><p>${esc(description)}</p>
+<ul class="meta"><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
+<div class="reader">
+<aside class="toc" aria-label="Sayfalar"><span class="eyebrow">${esc(t.code)} · ${t.pages.length} sayfa</span><ol>${t.pages.map((p, k) => `<li><a href="#s${k + 1}">${esc(p.title)}</a></li>`).join('')}</ol></aside>
+<article>
 ${t.pages.map((p, k) => `<section class="pg${p.h > p.w ? ' portrait' : ''}" id="s${k + 1}" data-id="${p.id}">
-<figure><img src="${url(`img/${p.id}.webp`)}" width="${p.w}" height="${p.h}" alt="${esc(`${p.title}: ${p.text}`.slice(0, 480))}"${k ? ' loading="lazy"' : ''} decoding="async"></figure>
-<h2><span class="no">${k + 1}/${t.pages.length}</span> ${esc(p.title)}</h2>
+<figure class="shot"><img src="${url(`img/${p.id}.webp`)}" width="${p.w}" height="${p.h}" alt="${esc(`${p.title}: ${p.text}`.slice(0, 480))}"${k ? ' loading="lazy"' : ''} decoding="async"></figure>
+<div class="notes"><h2><small>${esc(t.code)}.${k + 1} / ${t.pages.length}</small>${esc(p.title)}</h2>
 ${p.notes.length ? `<ul>${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-${p.text ? `<details><summary>Görseldeki yazılar</summary><p>${esc(p.text)}</p></details>` : ''}
+${p.text ? `<details><summary>Çizimdeki yazılar</summary><p>${esc(p.text)}</p></details>` : ''}</div>
 </section>`).join('\n')}
-<div class="steps"><button class="btn" id="prev">← Geri</button><span class="count" id="count"></span><button class="btn mode" id="mode">Tüm sayfalar</button><button class="btn primary" id="next">İleri →</button></div>
-<nav class="next-topic">${t.prev ? `<a href="${url(t.prev.path)}"><small>← Önceki konu</small>${esc(`${t.prev.code} · ${t.prev.title}`)}</a>` : ''}${t.next ? `<a id="nt" href="${url(t.next.path)}"><small>Sonraki konu →</small>${esc(`${t.next.code} · ${t.next.title}`)}</a>` : ''}</nav>`;
+<section class="endcard"><span class="eyebrow">Konu bitti</span><h2>${t.next ? `Sırada: ${esc(`${t.next.code} · ${t.next.title}`)}` : 'Son konuya geldin'}</h2>
+${t.next?.description ? `<p>${esc(t.next.description)}</p>` : ''}
+<div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
+</article></div></div>
+<nav class="dock" aria-label="Sayfa gezinme"><div class="in">
+<button class="btn" id="prev" type="button">${arrowL}<span>Geri</span><kbd>←</kbd></button>
+<button class="btn sheet-btn" id="sheet" type="button" aria-label="Sayfa listesi">☰</button>
+<span class="count" id="count">1 / ${t.pages.length}</span><span class="dots">${t.pages.map(() => '<i></i>').join('')}</span>
+<span class="spacer"></span><button class="btn mode" id="mode" type="button">Hepsi</button>
+<button class="btn go" id="next" type="button"><span>İleri</span>${arrowR}<kbd>→</kbd></button></div></nav>
+<div class="lightbox" role="dialog" aria-label="Büyük görünüm"><button class="btn" type="button">Kapat ✕</button><img alt=""></div>`;
   put(`${t.path}index.html`, layout({
-    title: `${name} | ${SITE}`, description, path: t.path, image: og, body, type: 'article',
+    title: `${name} | ${SITE}`, description, path: t.path, image: og, body, type: 'article', bodyClass: 'topic',
     jsonld: [
-      { '@context': 'https://schema.org', '@type': 'LearningResource', name, description, inLanguage: 'tr', url: abs(t.path), image: abs(og), license: LICENSE, isAccessibleForFree: true, learningResourceType: 'Infographic', isPartOf: { '@type': 'Course', name: t.track.name, url: abs(`${t.track.slug}/`) }, timeRequired: `PT${Math.max(3, t.pages.length * 2)}M` },
+      { '@context': 'https://schema.org', '@type': 'LearningResource', name, description, inLanguage: 'tr', url: abs(t.path), image: abs(og), license: LICENSE, isAccessibleForFree: true, learningResourceType: 'Infographic', isPartOf: { '@type': 'Course', name: t.track.name, url: abs(`${t.track.slug}/`) }, timeRequired: `PT${minutes(t)}M` },
       { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Harita', item: abs() }, { '@type': 'ListItem', position: 2, name: t.track.name, item: abs(`${t.track.slug}/`) }, { '@type': 'ListItem', position: 3, name, item: abs(t.path) }] },
     ],
   }));
 }
 
-// Glossary from content/sozluk.md (headings and tables only).
+// Glossary: content/sozluk.md tables become term cards, each linked to the topics that use the term.
 const md = readFileSync(join(root, 'content', 'sozluk.md'), 'utf8');
 const inline = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-let gloss = '', rows = [];
-const flush = () => { if (!rows.length) return; const [head, , ...rest] = rows; gloss += `<div class="tablewrap"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rest.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; rows = []; };
+const terms = [];
+let cat = '';
 for (const line of md.split('\n')) {
-  if (line.startsWith('|')) { rows.push(line.slice(1, -1).split('|').map((c) => c.trim())); continue; }
-  flush();
-  if (line.startsWith('## ')) gloss += `<h2>${inline(line.slice(3))}</h2>`;
+  if (line.startsWith('## ')) { cat = line.slice(3).trim(); continue; }
+  if (!line.startsWith('|') || /^\|\s*-/.test(line) || /^\|\s*Terim\s*\|/.test(line)) continue;
+  const [term, what, why] = line.slice(1, -1).split('|').map((c) => c.trim());
+  if (term) terms.push({ term, what, why, cat });
 }
-flush();
-put('sozluk/index.html', layout({ title: `Sözlük | ${SITE}`, description: 'Kripto, blockchain ve OpenTelemetry terimleri: her terim tek cümle.', path: 'sozluk/', body: `<h1>Sözlük</h1><p class="lead">Her terim tek cümle; ayrıntı konularda.</p>${gloss}` }));
-
-put('hakkinda/index.html', layout({
-  title: `Hakkında | ${SITE}`, description: SITE_DESC, path: 'hakkinda/',
-  body: `<h1>Hakkında</h1><p class="lead">${esc(SITE_DESC)}</p>
-<p>Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç madde. Örneklerdeki adres, hash ve imzalar gerçekten hesaplanmıştır; anahtarlar Anvil'in herkesçe bilinen test anahtarlarıdır, gerçek para için asla kullanılmamalıdır.</p>
-<p>hashspan bölümü, AI agent'ların zincire gönderdiği işlemleri OpenTelemetry ile izleyen açık kaynak <a href="https://github.com/selimaytac/hashspan">hashspan</a> kütüphanesini anlatır.</p>
-<p>İlerlemen sadece bu tarayıcıda tutulur; hesap, çerez ya da takip yoktur.</p>
-<p>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> ile paylaşılır: kaynak göstererek kullanabilirsin. Kaynak kod ve içerik: <a href="${REPO}">${REPO.replace('https://', '')}</a>.</p>`,
+const index = topics.map((t) => ({ t, text: findText(t) }));
+const usedIn = (term) => {
+  const keys = term.replace(/`/g, '').split(/\s*\/\s*|\s*\(/).map((k) => lower(k.replace(/\)$/, '').trim())).filter((k) => k.length > 2);
+  return index.filter(({ text }) => keys.some((k) => text.includes(k))).slice(0, 5).map(({ t }) => t);
+};
+const cats = [...new Set(terms.map((x) => x.cat))];
+put('sozluk/index.html', layout({
+  title: `Sözlük | ${SITE}`, description: 'Blockchain, OpenTelemetry ve hashspan terimleri: her terim tek cümle, geçtiği konulara bağlantıyla.', path: 'sozluk/', nav: 'gloss',
+  body: `<div class="wrap"><header class="gloss-head"><span class="eyebrow">${terms.length} terim</span><h1>Sözlük</h1><p class="hand" style="font-size:21px;color:var(--ink-2);margin:0">Her terim tek cümle. Ayrıntı, terimin geçtiği konularda.</p></header>
+<div class="toolbar">${searchBox('Terim ara: nonce, span, receipt…')}<ul class="cats">${cats.map((c) => `<li><button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="false">${esc(c)}</button></li>`).join('')}</ul></div>
+<div class="terms">${terms.map((x) => {
+    const used = usedIn(x.term);
+    return `<article class="term" data-cat="${esc(x.cat)}" data-find="${esc(lower(`${x.term} ${x.what} ${x.why}`))}"><span class="cat">${esc(x.cat)}</span><h3>${inline(x.term)}</h3><p>${inline(x.what)}</p>${x.why ? `<p class="why">${inline(x.why)}</p>` : ''}${used.length ? `<ul>${used.map((t) => `<li><a class="chip" href="${url(t.path)}" title="${esc(`${t.code} · ${t.title}`)}">${esc(t.track.slug === 'hashspan' ? `hashspan ${t.code}` : t.code)}</a></li>`).join('')}</ul>` : ''}</article>`;
+  }).join('\n')}</div></div>`,
 }));
 
-put('404.html', layout({ title: `Bulunamadı | ${SITE}`, description: SITE_DESC, path: '404.html', body: `<h1>Sayfa bulunamadı</h1><p><a class="btn primary" href="${url()}">Haritaya dön</a></p>` }));
+put('hakkinda/index.html', layout({
+  title: `Hakkında | ${SITE}`, description: SITE_DESC, path: 'hakkinda/', nav: 'about',
+  body: `<div class="wrap prose"><span class="eyebrow">Hakkında</span><h1>Az yazı, çok çizim</h1>
+<p>Her konu kısa sayfalara bölünür: her sayfada bir fikir, bir çizim ve altında birkaç not. Konular haritada sırayla dizilidir; önceki konular sonrakilerin temelidir.</p>
+<p>Örneklerdeki adres, hash ve imzalar gerçekten hesaplanmıştır. Anahtarlar Anvil'in herkesçe bilinen test anahtarlarıdır, gerçek para için asla kullanılmamalıdır.</p>
+<p>hashspan bölümü, AI agent'ların zincire gönderdiği işlemleri OpenTelemetry ile izleyen açık kaynak <a href="https://github.com/selimaytac/hashspan">hashspan</a> kütüphanesini anlatır.</p>
+<p>İlerlemen sadece bu tarayıcıda tutulur; hesap, çerez ya da takip yoktur.</p>
+<p>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> ile paylaşılır: kaynak göstererek kullanabilirsin. Kaynak kod ve içerik: <a href="${REPO}">${REPO.replace('https://', '')}</a>.</p></div>`,
+}));
+put('404.html', layout({ title: `Bulunamadı | ${SITE}`, description: SITE_DESC, path: '404.html', body: `<div class="wrap prose"><h1>Bu sayfa yok</h1><p><a class="btn go" href="${url()}">Haritaya dön</a></p></div>` }));
 
 rmSync(out, { recursive: true, force: true });
 for (const [path, html] of files) { mkdirSync(dirname(join(out, path)), { recursive: true }); writeFileSync(join(out, path), html); }
-writeFileSync(join(out, 'style.css'), css.trim());
-writeFileSync(join(out, 'app.js'), js.trim());
-writeFileSync(join(out, 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#1864ab"/><circle cx="12" cy="16" r="5" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M17 16h9m-3 0v4" stroke="#fff" stroke-width="2.5" fill="none"/></svg>');
+cpSync(join(root, 'assets', 'style.css'), join(out, 'style.css'));
+cpSync(join(root, 'assets', 'app.js'), join(out, 'app.js'));
+writeFileSync(join(out, 'favicon.svg'), logo.replace('width="34" height="34" ', 'xmlns="http://www.w3.org/2000/svg" ').replace(' aria-hidden="true"', ''));
 writeFileSync(join(out, '.nojekyll'), '');
 cpSync(join(root, 'content', 'img'), join(out, 'img'), { recursive: true });
 cpSync(join(root, 'content', 'og'), join(out, 'og'), { recursive: true });
 const urls = ['', 'sozluk/', 'hakkinda/', ...data.tracks.map((t) => `${t.slug}/`), ...topics.map((t) => t.path)];
 writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${abs(u)}</loc></url>`).join('\n')}\n</urlset>\n`);
 writeFileSync(join(out, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${abs('sitemap.xml')}\n`);
-writeFileSync(join(out, 'llms.txt'), `# ${SITE}\n\n> ${SITE_DESC}\n\n${data.tracks.map((track) => `## ${track.name}\n\n${topics.filter((t) => t.track === track).map((t) => `- [${t.code} · ${t.title}](${abs(t.path)}): ${t.description || `${t.pages.length} sayfa`}`).join('\n')}`).join('\n\n')}\n`);
-// The repository README: what this is and every topic with its link.
-writeFileSync(join(root, 'README.md'), `# ${SITE}
+writeFileSync(join(out, 'llms.txt'), `# ${SITE} ${SITE_SUB}\n\n> ${SITE_DESC}\n\n${data.tracks.map((track) => `## ${track.name}\n\n${topics.filter((t) => t.track === track).map((t) => `- [${t.code} · ${t.title}](${abs(t.path)}): ${t.description || `${t.pages.length} sayfa`}`).join('\n')}`).join('\n\n')}\n`);
+
+writeFileSync(join(root, 'README.md'), `# ${SITE} ${SITE_SUB}
 
 ${SITE_DESC}
 
 **Site:** ${abs()}
 
-Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç madde. ${topics.length} konu, ${pageCount} sayfa.
+${topics.length} konu, ${pageCount} çizim, ${noteCount} not. Her konu kısa sayfalara bölünmüştür: her sayfada bir fikir, bir çizim ve altında birkaç not.
 
 ${data.tracks.map((track) => `## ${track.name}\n\n${track.description}\n\n${track.sections.map((sec) => `### ${sec.title}\n\n${sec.topics.map((t) => `- [${t.code} · ${t.title}](${abs(`${track.slug}/${t.slug}/`)})${t.description ? `: ${t.description}` : ''}`).join('\n')}`).join('\n\n')}`).join('\n\n')}
 
 ## Yapı
 
-- \`content/\`: görseller (\`img/\`), sosyal önizlemeler (\`og/\`), konu ve sayfa verisi (\`data.json\`), sözlük (\`sozluk.md\`)
+- \`content/\`: çizimler (\`img/\`), sosyal önizlemeler (\`og/\`), konu ve sayfa verisi (\`data.json\`), sözlük (\`sozluk.md\`)
+- \`assets/\`: sitenin stili ve davranışı
 - \`build.mjs\`: siteyi \`_site/\` altına üretir (\`node build.mjs\`, bağımlılık yok); GitHub Actions her push'ta GitHub Pages'e yayınlar
 
 ## Lisans
 
-İçerik (görseller ve metinler) [CC BY 4.0](LICENSE): kaynak göstererek kullanabilirsin. Kod [MIT](LICENSE-CODE).
+İçerik (çizimler ve metinler) [CC BY 4.0](LICENSE): kaynak göstererek kullanabilirsin. Kod [MIT](LICENSE-CODE).
 `);
-console.log(`${files.size} HTML files, ${topics.length} topics, ${pageCount} pages → ${out}`);
+console.log(`${files.size} HTML files, ${topics.length} topics, ${pageCount} pages, ${terms.length} terms → ${out}`);
