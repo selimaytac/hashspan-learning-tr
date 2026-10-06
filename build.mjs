@@ -68,11 +68,12 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 <main>${body}</main>
 <footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('kaydedilenler/')}">Kaydedilenler</a><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a>${SOCIAL.map((x) => `<a href="${x.href}" rel="noopener">${x.name}</a>`).join('')}<span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
 <dialog class="thanks" id="thanks" aria-labelledby="thanks-h">
-<span class="eyebrow">⤓ İndirme başladı</span><h2 id="thanks-h">Bu içerik ücretsiz, #hashspan sponsorluğunda.</h2>
-<p>Desteklemek istersen hashspan'a GitHub'da yıldız verebilir ya da sosyal medyada takip edebilirsin.</p>
-<div class="thanks-row"><a class="btn go" href="${HASHSPAN}" target="_blank" rel="noopener">★ GitHub'da yıldız ver</a></div>
-<div class="thanks-row">${SOCIAL.map((x) => `<a class="chip" href="${x.href}" target="_blank" rel="noopener">${x.name} · ${x.handle}</a>`).join('')}</div>
-<form method="dialog" class="thanks-foot"><label><input type="checkbox" id="thanks-off"> Bir daha gösterme</label><button class="btn" value="close">Kapat</button></form>
+<form method="dialog" class="thanks-x"><button class="theme" value="close" aria-label="Kapat">✕</button></form>
+<span class="eyebrow" id="thanks-file">PDF</span><h2 id="thanks-h">Bu içerik ücretsiz, #hashspan sponsorluğunda.</h2>
+<p>İndirmeden önce bir saniye: hashspan'a GitHub'da yıldız vererek ya da sosyal medyada takip ederek destek olabilirsin.</p>
+<a class="btn go star" href="${HASHSPAN}" target="_blank" rel="noopener">★ GitHub'da yıldız ver</a>
+<div class="thanks-row">${SOCIAL.map((x) => `<a class="chip" href="${x.href}" target="_blank" rel="noopener">${x.name}<small>${x.handle}</small></a>`).join('')}</div>
+<a class="btn ok getpdf" id="thanks-dl" href="#" download>⤓ PDF'i indir</a>
 </dialog>
 <script src="${url(`app.js?v=${VER}`)}" defer></script>
 </body></html>
@@ -104,12 +105,12 @@ const roadmap = (track) => {
   return `<div class="flow">${prereq}${track.sections.map((sec) => moduleHtml(track, sec)).join('<div class="connector"><span>sonra</span></div>')}</div>`;
 };
 
-const trackBlock = (track) => `<section class="track" id="${track.slug}" data-track="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p><a class="chip dl" href="${pdfLink(`${track.slug}-tamami`)}" download>⤓ Tamamı PDF</a></div>
+const trackBlock = (track) => `<section class="track" id="${track.slug}" data-track="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p><a class="chip dl" href="${pdfLink(`${track.slug}-tamami`)}" data-label="${esc(`${track.name} · tamamı`)}" download>⤓ Tamamı PDF</a></div>
 <nav class="pager" aria-label="${esc(track.name)} bölümleri"><button class="btn sq" type="button" data-step="-1" aria-label="Önceki bölüm">←</button><ol>${track.sections.map((sec, k) => `<li><button class="chip" type="button" data-go="${k}" title="${esc(sec.title)}">${esc(sec.title.split(' · ')[0])}</button></li>`).join('')}</ol><button class="btn sq" type="button" data-step="1" aria-label="Sonraki bölüm">→</button><span class="pager-name"></span></nav>
 ${roadmap(track)}
 <div class="pager-foot"><button class="btn" type="button" data-step="-1">← Önceki bölüm</button><button class="btn go" type="button" data-step="1">Sonraki bölüm →</button></div></section>`;
 const trackTabs = `<div class="tracktabs" role="tablist">${data.tracks.map((t) => `<button type="button" role="tab" data-track="${t.slug}"><b>${esc(t.name)}</b><small>${topics.filter((x) => x.track === t).length} konu</small></button>`).join('')}</div>
-<p class="dlrow">${data.tracks.map((t) => `<a class="chip dl" href="${pdfLink(`${t.slug}-tamami`)}" download>⤓ ${esc(t.name)} · PDF</a>`).join('')}<span class="hand">Paylaş, dağıt: her sayfada sitenin adresi var.</span></p>`;
+<p class="dlrow">${data.tracks.map((t) => `<a class="chip dl" href="${pdfLink(`${t.slug}-tamami`)}" data-label="${esc(`${t.name} · tamamı`)}" download>⤓ ${esc(t.name)} · PDF</a>`).join('')}<span class="hand">Paylaş, dağıt: her sayfada sitenin adresi var.</span></p>`;
 
 const legend = `<ul class="legend" aria-label="Renkler"><li class="chip">başlanmadı</li><li class="chip y">yarım</li><li class="chip g">bitti</li><li class="chip b">sıradaki</li></ul>`;
 const searchBox = (ph) => `<label class="search">${searchIcon}<input id="q" type="search" placeholder="${ph}" aria-label="Ara"></label>`;
@@ -184,7 +185,7 @@ for (const t of topics) {
   const body = `<div class="wrap">
 <p class="crumbs"><a href="${url()}">Harita</a> / <a href="${url(`${t.track.slug}/`)}">${esc(t.track.name)}</a> / ${esc(t.section.title)}</p>
 <header class="topic-head"><h1><span>${esc(t.code)}</span>${esc(t.title)}</h1><p>${esc(description)}</p>
-<ul class="meta"><li><a class="chip dl" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" download>⤓ PDF</a></li><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
+<ul class="meta"><li><a class="chip dl" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" data-label="${esc(`${t.code} · ${t.title}`)}" download>⤓ PDF</a></li><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
 <div class="reader${t.pages.length === 1 ? ' single' : ''}">
 <aside class="toc" aria-label="Sayfalar"><span class="eyebrow">${esc(t.code)} · ${t.pages.length} sayfa</span><ol>${t.pages.map((p, k) => `<li><a href="#s${k + 1}">${esc(p.title)}</a></li>`).join('')}</ol></aside>
 <article>
@@ -197,7 +198,7 @@ ${p.text ? `<details><summary>Çizimdeki yazılar</summary><p>${esc(p.text)}</p>
 ${t.quiz?.length ? `<section class="quiz" aria-label="Kendini dene"><span class="eyebrow">Kendini dene · ${t.quiz.length} soru</span>${t.quiz.map((qz, n) => `<div class="qz" data-answer="${qz.answer}"><p class="qz-q">${esc(qz.q)}</p><ol class="qz-opts">${qz.options.map((o, m) => `<li><button class="qz-o" type="button" data-i="${m}">${esc(o)}</button></li>`).join('')}</ol><p class="qz-why" hidden>${esc(qz.why)}</p></div>`).join('')}</section>` : ''}
 <section class="endcard"><span class="eyebrow">Konu bitti</span><h2>${t.next ? `Sırada: ${esc(`${t.next.code} · ${t.next.title}`)}` : 'Son konuya geldin'}</h2>
 ${t.next?.description ? `<p>${esc(t.next.description)}</p>` : ''}
-<div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a><a class="btn" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" download>⤓ Bu konunun PDF'i</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
+<div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a><a class="btn" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" data-label="${esc(`${t.code} · ${t.title}`)}" download>⤓ Bu konunun PDF'i</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
 </article></div></div>
 <nav class="dock" aria-label="Sayfa gezinme"><div class="in">
 <button class="btn" id="prev" type="button">${arrowL}<span>Geri</span><kbd>←</kbd></button>

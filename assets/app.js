@@ -18,14 +18,18 @@
     S.set('gk-theme', root.dataset.theme);
   });
 
-  // After a PDF download starts, ask for a star or a follow (unless the reader turned it off).
+  // A PDF link opens the support dialog first; the download button sits at its bottom.
   const thanks = $('#thanks');
   if (thanks && thanks.showModal) {
-    for (const a of $$('a[href$=".pdf"]')) a.addEventListener('click', () => {
-      if (S.get('gk-thanks-off')) return;
-      setTimeout(() => { try { thanks.showModal(); } catch { /* dialog unavailable */ } }, 300);
+    const dl = $('#thanks-dl');
+    for (const a of $$('a[href$=".pdf"]')) a.addEventListener('click', (e) => {
+      e.preventDefault();
+      dl.href = a.href;
+      dl.setAttribute('download', '');
+      $('#thanks-file').textContent = `PDF · ${a.dataset.label || 'Görsel Kripto'}`;
+      try { thanks.showModal(); } catch { location.href = a.href; }
     });
-    $('#thanks-off').addEventListener('change', (e) => S.set('gk-thanks-off', e.target.checked));
+    dl.addEventListener('click', () => setTimeout(() => thanks.close(), 400));
     thanks.addEventListener('click', (e) => { if (e.target === thanks) thanks.close(); });
   }
 
