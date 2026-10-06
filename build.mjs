@@ -13,6 +13,11 @@ const BASE = (process.env.BASE_URL ?? 'https://selimaytac.github.io/hashspan-lea
 const PATH = new URL(`${BASE}/`).pathname;
 const SITE = 'Görsel Kripto';
 const HASHSPAN = 'https://github.com/selimaytac/hashspan';
+const SOCIAL = [
+  { name: 'YouTube', handle: '@hashspan', href: 'https://www.youtube.com/@hashspan' },
+  { name: 'Instagram', handle: '@hashspan', href: 'https://www.instagram.com/hashspan/' },
+  { name: 'X', handle: '@Hashspandev', href: 'https://x.com/Hashspandev' },
+];
 const SITE_DESC = 'Cüzdanlar, imzalar, custody, konsensüs ve on-chain gözlemlenebilirlik: her sayfada bir fikir, bir çizim. Türkçe ve ücretsiz.';
 const LICENSE = 'https://creativecommons.org/licenses/by/4.0/deed.tr';
 const REPO = 'https://github.com/selimaytac/hashspan-learning-tr';
@@ -61,7 +66,14 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 <nav aria-label="Site"><a href="${url()}"${nav === 'map' ? ' aria-current="page"' : ''}>Harita</a><a href="${url('sozluk/')}"${nav === 'gloss' ? ' aria-current="page"' : ''}>Sözlük</a><a class="wide" href="${url('kaydedilenler/')}"${nav === 'saved' ? ' aria-current="page"' : ''}>Kaydedilenler</a><a class="wide" href="${url('hakkinda/')}"${nav === 'about' ? ' aria-current="page"' : ''}>Hakkında</a><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">◐</button></nav></div>
 <div class="meter"><i></i></div></header>
 <main>${body}</main>
-<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('kaydedilenler/')}">Kaydedilenler</a><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a><span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
+<footer><div class="wrap"><span>İçerik <a href="${LICENSE}" rel="license">CC BY 4.0</a> · kod MIT</span><a href="${url('kaydedilenler/')}">Kaydedilenler</a><a href="${url('hakkinda/')}">Hakkında</a><a href="${REPO}">GitHub</a><a href="${HASHSPAN}">★ hashspan'a yıldız ver</a>${SOCIAL.map((x) => `<a href="${x.href}" rel="noopener">${x.name}</a>`).join('')}<span>İlerlemen sadece bu tarayıcıda tutulur.</span></div></footer>
+<dialog class="thanks" id="thanks" aria-labelledby="thanks-h">
+<span class="eyebrow">⤓ İndirme başladı</span><h2 id="thanks-h">Bu içerik ücretsiz, #hashspan sponsorluğunda.</h2>
+<p>Desteklemek istersen hashspan'a GitHub'da yıldız verebilir ya da sosyal medyada takip edebilirsin.</p>
+<div class="thanks-row"><a class="btn go" href="${HASHSPAN}" target="_blank" rel="noopener">★ GitHub'da yıldız ver</a></div>
+<div class="thanks-row">${SOCIAL.map((x) => `<a class="chip" href="${x.href}" target="_blank" rel="noopener">${x.name} · ${x.handle}</a>`).join('')}</div>
+<form method="dialog" class="thanks-foot"><label><input type="checkbox" id="thanks-off"> Bir daha gösterme</label><button class="btn" value="close">Kapat</button></form>
+</dialog>
 <script src="${url(`app.js?v=${VER}`)}" defer></script>
 </body></html>
 `;
@@ -268,7 +280,8 @@ function printDoc(title, items, path) {
   if (cover) {
     sheets.push({ cls: 'cover', html: (n, total) => `${sheetHead(SITE, title)}<div class="body"><span class="big">${logo}${esc(SITE)}</span><h1>${esc(title)}</h1><p>${esc(SITE_DESC)}</p>
 <div class="toc">${items.map((t) => `<div><b>${esc(t.code)}</b> ${esc(t.title)} <span style="color:#6f737c">· ${t.pages.length} sayfa</span></div>`).join('')}</div>
-<p class="big">${MARK}<span>#hashspan sponsorluğunda · github.com/selimaytac/hashspan</span></p></div>${sheetFoot(path, n, total)}` });
+<p class="big">${MARK}<span>#hashspan sponsorluğunda · github.com/selimaytac/hashspan</span></p>
+<p style="font:500 10pt/1.6 'JetBrains Mono',monospace;color:#464953">Destek: GitHub'da ★ yıldız · ${SOCIAL.map((x) => `${x.name} ${x.handle}`).join(' · ')}</p></div>${sheetFoot(path, n, total)}` });
   }
   for (const t of items) {
     t.pages.forEach((p, k) => sheets.push({ html: (n, total) => `${sheetHead(`${t.code} · ${t.title}`, `${t.track.name} · ${t.section.title}`)}

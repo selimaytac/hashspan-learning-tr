@@ -348,3 +348,12 @@ a.gl:hover { background: var(--yellow); color: var(--on-fill); }
 .chip.dl:hover { box-shadow: 2px 2px 0 var(--shadow); }
 .dlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 4px 0 18px; }
 .dlrow .hand { font-size: 18px; color: var(--ink-2); }
+
+/* Thank-you dialog after a PDF download */
+.thanks { width: min(92vw, 460px); border: 2px solid var(--ink); border-radius: 16px; background: var(--paper); color: var(--ink); padding: 22px; box-shadow: 6px 6px 0 var(--shadow); }
+.thanks::backdrop { background: rgba(20, 20, 24, .45); }
+.thanks h2 { font-size: 20px; margin: 8px 0 8px; }
+.thanks p { margin: 0 0 16px; color: var(--ink-2); }
+.thanks-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.thanks-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; font: 500 13px/1.3 var(--mono); color: var(--muted); }
+.thanks-foot label { display: flex; align-items: center; gap: 6px; cursor: pointer; }

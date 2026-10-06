@@ -18,6 +18,17 @@
     S.set('gk-theme', root.dataset.theme);
   });
 
+  // After a PDF download starts, ask for a star or a follow (unless the reader turned it off).
+  const thanks = $('#thanks');
+  if (thanks && thanks.showModal) {
+    for (const a of $$('a[href$=".pdf"]')) a.addEventListener('click', () => {
+      if (S.get('gk-thanks-off')) return;
+      setTimeout(() => { try { thanks.showModal(); } catch { /* dialog unavailable */ } }, 300);
+    });
+    $('#thanks-off').addEventListener('change', (e) => S.set('gk-thanks-off', e.target.checked));
+    thanks.addEventListener('click', (e) => { if (e.target === thanks) thanks.close(); });
+  }
+
   // Map: state per topic (started, done) and the suggested next topic.
   const items = $$('.chain > li[data-pages]');
   if (items.length) {
