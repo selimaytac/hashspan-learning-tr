@@ -37,6 +37,7 @@ topics.forEach((t, i) => { t.prev = topics[i - 1]; t.next = topics[i + 1]; });
 const pageCount = topics.reduce((n, t) => n + t.pages.length, 0);
 const noteCount = topics.reduce((n, t) => n + t.pages.reduce((m, p) => m + p.notes.length, 0), 0);
 const minutes = (t) => Math.max(3, Math.round(t.pages.length * 1.5));
+const pdfLink = (file) => url(`pdf/${file}.pdf`);
 const findText = (t) => lower([t.code, t.title, t.description, ...t.pages.flatMap((p) => [p.title, ...p.notes, p.text])].join(' '));
 
 const logo = `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="31" rx="8" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/><circle cx="12" cy="17" r="5" fill="#fff" stroke="#1e1e1e" stroke-width="2"/><path d="M17 17h10M23.5 17v4.5M27 17v3" stroke="#1e1e1e" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
@@ -91,11 +92,12 @@ const roadmap = (track) => {
   return `<div class="flow">${prereq}${track.sections.map((sec) => moduleHtml(track, sec)).join('<div class="connector"><span>sonra</span></div>')}</div>`;
 };
 
-const trackBlock = (track) => `<section class="track" id="${track.slug}" data-track="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p></div>
+const trackBlock = (track) => `<section class="track" id="${track.slug}" data-track="${track.slug}"><div class="track-head"><h2><a href="${url(`${track.slug}/`)}">${esc(track.name)}</a></h2><p>${esc(track.description)}</p><a class="chip dl" href="${pdfLink(`${track.slug}-tamami`)}" download>⤓ Tamamı PDF</a></div>
 <nav class="pager" aria-label="${esc(track.name)} bölümleri"><button class="btn sq" type="button" data-step="-1" aria-label="Önceki bölüm">←</button><ol>${track.sections.map((sec, k) => `<li><button class="chip" type="button" data-go="${k}" title="${esc(sec.title)}">${esc(sec.title.split(' · ')[0])}</button></li>`).join('')}</ol><button class="btn sq" type="button" data-step="1" aria-label="Sonraki bölüm">→</button><span class="pager-name"></span></nav>
 ${roadmap(track)}
 <div class="pager-foot"><button class="btn" type="button" data-step="-1">← Önceki bölüm</button><button class="btn go" type="button" data-step="1">Sonraki bölüm →</button></div></section>`;
-const trackTabs = `<div class="tracktabs" role="tablist">${data.tracks.map((t) => `<button type="button" role="tab" data-track="${t.slug}"><b>${esc(t.name)}</b><small>${topics.filter((x) => x.track === t).length} konu</small></button>`).join('')}</div>`;
+const trackTabs = `<div class="tracktabs" role="tablist">${data.tracks.map((t) => `<button type="button" role="tab" data-track="${t.slug}"><b>${esc(t.name)}</b><small>${topics.filter((x) => x.track === t).length} konu</small></button>`).join('')}</div>
+<p class="dlrow">${data.tracks.map((t) => `<a class="chip dl" href="${pdfLink(`${t.slug}-tamami`)}" download>⤓ ${esc(t.name)} · PDF</a>`).join('')}<span class="hand">Paylaş, dağıt: her sayfada sitenin adresi var.</span></p>`;
 
 const legend = `<ul class="legend" aria-label="Renkler"><li class="chip">başlanmadı</li><li class="chip y">yarım</li><li class="chip g">bitti</li><li class="chip b">sıradaki</li></ul>`;
 const searchBox = (ph) => `<label class="search">${searchIcon}<input id="q" type="search" placeholder="${ph}" aria-label="Ara"></label>`;
@@ -170,7 +172,7 @@ for (const t of topics) {
   const body = `<div class="wrap">
 <p class="crumbs"><a href="${url()}">Harita</a> / <a href="${url(`${t.track.slug}/`)}">${esc(t.track.name)}</a> / ${esc(t.section.title)}</p>
 <header class="topic-head"><h1><span>${esc(t.code)}</span>${esc(t.title)}</h1><p>${esc(description)}</p>
-<ul class="meta"><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
+<ul class="meta"><li><a class="chip dl" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" download>⤓ PDF</a></li><li class="chip">${t.pages.length} çizim</li><li class="chip">~${minutes(t)} dk</li>${pre.length ? `<li class="chip p">Önce: ${pre.map((x) => `<a href="${url(x.path)}">${esc(x.code)}</a>`).join(', ')}</li>` : ''}</ul></header>
 <div class="reader${t.pages.length === 1 ? ' single' : ''}">
 <aside class="toc" aria-label="Sayfalar"><span class="eyebrow">${esc(t.code)} · ${t.pages.length} sayfa</span><ol>${t.pages.map((p, k) => `<li><a href="#s${k + 1}">${esc(p.title)}</a></li>`).join('')}</ol></aside>
 <article>
@@ -183,7 +185,7 @@ ${p.text ? `<details><summary>Çizimdeki yazılar</summary><p>${esc(p.text)}</p>
 ${t.quiz?.length ? `<section class="quiz" aria-label="Kendini dene"><span class="eyebrow">Kendini dene · ${t.quiz.length} soru</span>${t.quiz.map((qz, n) => `<div class="qz" data-answer="${qz.answer}"><p class="qz-q">${esc(qz.q)}</p><ol class="qz-opts">${qz.options.map((o, m) => `<li><button class="qz-o" type="button" data-i="${m}">${esc(o)}</button></li>`).join('')}</ol><p class="qz-why" hidden>${esc(qz.why)}</p></div>`).join('')}</section>` : ''}
 <section class="endcard"><span class="eyebrow">Konu bitti</span><h2>${t.next ? `Sırada: ${esc(`${t.next.code} · ${t.next.title}`)}` : 'Son konuya geldin'}</h2>
 ${t.next?.description ? `<p>${esc(t.next.description)}</p>` : ''}
-<div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
+<div class="row">${t.next ? `<a class="btn go" id="nt" href="${url(t.next.path)}">Sonraki konu →</a>` : ''}<a class="btn" href="${url(`#${t.track.slug}`)}">Haritaya dön</a><a class="btn" href="${pdfLink(`${t.track.slug}-${t.slug}`)}" download>⤓ Bu konunun PDF'i</a>${t.prev ? `<a class="btn" href="${url(t.prev.path)}">← ${esc(t.prev.code)}</a>` : ''}</div></section>
 </article></div></div>
 <nav class="dock" aria-label="Sayfa gezinme"><div class="in">
 <button class="btn" id="prev" type="button">${arrowL}<span>Geri</span><kbd>←</kbd></button>
@@ -237,6 +239,55 @@ put('hakkinda/index.html', layout({
 }));
 put('404.html', layout({ title: `Bulunamadı | ${SITE}`, description: SITE_DESC, path: '404.html', body: `<div class="wrap prose"><h1>Bu sayfa yok</h1><p><a class="btn go" href="${url()}">Haritaya dön</a></p></div>` }));
 
+// Printable pages: one per topic and one per track, turned into PDFs by pdf.mjs. Every sheet carries the site's
+// address and the sponsor mark, so a shared PDF still leads back to the site.
+const MARK = readFileSync(join(root, 'content', 'brand', 'hashspan-mark.svg'), 'utf8');
+const printCss = `@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;background:#fff;color:#1e1e1e;font:10.5pt/1.45 "IBM Plex Sans",system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet{width:210mm;height:297mm;padding:10mm 13mm 9mm;display:flex;flex-direction:column;page-break-after:always;overflow:hidden}
+.sheet:last-child{page-break-after:auto}
+.ph{display:flex;align-items:center;gap:3mm;border-bottom:.5mm solid #1e1e1e;padding-bottom:2.5mm;font:600 9pt/1.2 "JetBrains Mono",monospace}
+.ph svg{width:8mm;height:8mm;flex:none}.ph .t{flex:1;min-width:0}.ph .t small{display:block;font-weight:400;color:#5c5f66}
+.ph .sp{display:flex;align-items:center;gap:1.5mm;font-weight:500;color:#464953;white-space:nowrap}.ph .sp svg{width:6mm;height:6mm}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:4mm;padding-top:5mm}
+.fig{flex:1;min-height:0;display:flex;justify-content:center}.fig img{max-height:100%;max-width:100%;object-fit:contain;border:.4mm solid #1e1e1e;border-radius:3mm}
+h2{font:700 13pt/1.25 "JetBrains Mono",monospace;margin:0}h2 small{font-weight:500;color:#6f737c;margin-right:2mm}
+ul{margin:0;padding-left:5mm}li{margin:0 0 1.2mm}
+.pf{display:flex;justify-content:space-between;gap:4mm;border-top:.3mm dashed #b9b4a6;padding-top:2.5mm;font:500 8pt/1.3 "JetBrains Mono",monospace;color:#5c5f66}
+.pf b{color:#1e1e1e}
+.cover .body{justify-content:center;gap:8mm}.cover h1{font:700 26pt/1.15 "JetBrains Mono",monospace;margin:0}.cover p{font-size:12.5pt;color:#464953;margin:0;max-width:150mm}
+.cover .big{display:flex;align-items:center;gap:4mm;font:600 12pt/1.3 "JetBrains Mono",monospace}.cover .big svg{width:14mm;height:14mm}
+.toc{columns:2;column-gap:10mm;font-size:9.5pt}.toc div{break-inside:avoid;margin-bottom:1.2mm}
+.q{border:.4mm dashed #1e1e1e;border-radius:3mm;padding:4mm 5mm;margin-bottom:4mm;break-inside:avoid}.q p{margin:0 0 2mm;font-weight:600}
+.q ol{margin:0;padding-left:6mm}.q .ans{margin-top:2mm;font-size:9.5pt;color:#2b8a3e}`;
+const sheetHead = (left, sub) => `<header class="ph">${logo}<span class="t">${esc(left)}<small>${esc(sub)}</small></span><span class="sp">${MARK}#hashspan sponsorluğunda</span></header>`;
+const sheetFoot = (path, n, total) => `<footer class="pf"><span><a href="${abs(path)}" style="color:inherit;text-decoration:none"><b>${esc(abs(path).replace(/^https?:\/\//, ''))}</b></a></span><span>CC BY 4.0 · ${n}/${total}</span></footer>`;
+function printDoc(title, items, path) {
+  // items: topics in order. A cover, then one sheet per drawing, then the topic's questions with answers.
+  const sheets = [];
+  const cover = items.length > 1;
+  if (cover) {
+    sheets.push({ cls: 'cover', html: (n, total) => `${sheetHead(SITE, title)}<div class="body"><span class="big">${logo}${esc(SITE)}</span><h1>${esc(title)}</h1><p>${esc(SITE_DESC)}</p>
+<div class="toc">${items.map((t) => `<div><b>${esc(t.code)}</b> ${esc(t.title)} <span style="color:#6f737c">· ${t.pages.length} sayfa</span></div>`).join('')}</div>
+<p class="big">${MARK}<span>#hashspan sponsorluğunda · github.com/selimaytac/hashspan</span></p></div>${sheetFoot(path, n, total)}` });
+  }
+  for (const t of items) {
+    t.pages.forEach((p, k) => sheets.push({ html: (n, total) => `${sheetHead(`${t.code} · ${t.title}`, `${t.track.name} · ${t.section.title}`)}
+<div class="body"><div class="fig"><img src="../print/${p.id}.jpg" alt=""></div><h2><small>${esc(t.code)}.${k + 1}/${t.pages.length}</small>${esc(p.title)}</h2>
+${p.notes.length ? `<ul>${p.notes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>${sheetFoot(t.path, n, total)}` }));
+    if (t.quiz?.length) {
+      sheets.push({ html: (n, total) => `${sheetHead(`${t.code} · ${t.title}`, 'Kendini dene')}<div class="body"><h2>Kendini dene</h2>
+${t.quiz.map((q) => `<div class="q"><p>${esc(q.q)}</p><ol type="a">${q.options.map((o) => `<li>${esc(o)}</li>`).join('')}</ol><div class="ans">Cevap: ${'abc'[q.answer]}) ${esc(q.why)}</div></div>`).join('')}
+${t.next ? `<p>Sıradaki konu: <b>${esc(`${t.next.code} · ${t.next.title}`)}</b>, ${esc(abs(t.next.path).replace(/^https?:\/\//, ''))}</p>` : ''}</div>${sheetFoot(t.path, n, total)}` });
+    }
+  }
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>${esc(title)} | ${SITE}</title><link rel="stylesheet" href="${FONTS}"><style>${printCss}</style></head><body>
+${sheets.map((sh, i) => `<section class="sheet ${sh.cls ?? ''}">${sh.html(i + 1, sheets.length)}</section>`).join('\n')}</body></html>`;
+}
+const prints = [];
+for (const t of topics) prints.push({ file: `${t.track.slug}-${t.slug}`, html: printDoc(`${t.code} · ${t.title}`, [t], t.path) });
+for (const track of data.tracks) prints.push({ file: `${track.slug}-tamami`, html: printDoc(track.name, topics.filter((t) => t.track === track), `${track.slug}/`) });
+const pdfHref = (file) => url(`pdf/${file}.pdf`);
+
 rmSync(out, { recursive: true, force: true });
 for (const [path, html] of files) { mkdirSync(dirname(join(out, path)), { recursive: true }); writeFileSync(join(out, path), html); }
 cpSync(join(root, 'assets', 'style.css'), join(out, 'style.css'));
@@ -245,6 +296,10 @@ writeFileSync(join(out, 'favicon.svg'), logo.replace('width="34" height="34" ', 
 writeFileSync(join(out, '.nojekyll'), '');
 cpSync(join(root, 'content', 'img'), join(out, 'img'), { recursive: true });
 cpSync(join(root, 'content', 'og'), join(out, 'og'), { recursive: true });
+cpSync(join(root, 'content', 'print'), join(out, 'print'), { recursive: true });
+mkdirSync(join(out, 'print-html'), { recursive: true });
+for (const p of prints) writeFileSync(join(out, 'print-html', `${p.file}.html`), p.html);
+writeFileSync(join(out, 'print-html', 'list.json'), JSON.stringify(prints.map((p) => p.file)));
 const urls = ['', 'sozluk/', 'hakkinda/', 'kaydedilenler/', ...data.tracks.map((t) => `${t.slug}/`), ...topics.map((t) => t.path)];
 writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${abs(u)}</loc></url>`).join('\n')}\n</urlset>\n`);
 writeFileSync(join(out, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${abs('sitemap.xml')}\n`);

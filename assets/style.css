@@ -342,3 +342,9 @@ a.gl:hover { background: var(--yellow); color: var(--on-fill); }
 .qz.done .qz-o { cursor: default; }
 .qz-why { margin: 10px 0 0; font: 18px/1.35 var(--hand); color: var(--ink-2); }
 @media (max-width: 760px) { .top nav a.wide { display: none; } }
+
+/* PDF downloads */
+.chip.dl { background: var(--green); color: var(--on-fill); border-color: var(--on-fill); font-weight: 600; }
+.chip.dl:hover { box-shadow: 2px 2px 0 var(--shadow); }
+.dlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 4px 0 18px; }
+.dlrow .hand { font-size: 18px; color: var(--ink-2); }
